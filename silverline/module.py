@@ -1,10 +1,8 @@
 """Python Module."""
 
 import time
-
-
-class Module:
-    """Python Module."""
+import os
+import psutil
 
 
 class Profile:
@@ -35,3 +33,13 @@ class Profile:
             "ch_in": self.ch_in,
             "ch_out": self.ch_out
         }
+
+
+class Module:
+    """Python Module."""
+
+    def __init__(self):
+
+        self.profile = Profile()
+
+    

@@ -2,9 +2,6 @@
 
 import ssl
 import queue
-import time
-import psutil
-import os
 
 from threading import Semaphore
 import paho.mqtt.client as mqtt
@@ -35,6 +32,7 @@ class Channel:
     def close(self):
         """Close this channel."""
         self.parent.unsubscribe(self.topic)
+        self.parent.channels[self.topic].remove(self)
 
     def poll(self, sleep_ms):
         """Wait for message on queue."""
@@ -44,7 +42,7 @@ class Channel:
             return None
 
 
-class Channels(mqtt.Client):
+class ChannelManager(mqtt.Client):
     """Channels interface.
 
     Keyword Args
@@ -96,7 +94,8 @@ class Channels(mqtt.Client):
     def on_message(self, client, userdata, message):
         """Subscribed message handler."""
         try:
-            self.channels[message.topic].messages.put(message.payload)
+            for ch in self.channels[message.topic]:
+                ch.messages.put(message.payload)
         except KeyError:
             raise Exception(
                 "Received message from topic {} that we shouldn't be "
@@ -108,5 +107,8 @@ class Channels(mqtt.Client):
 
         self.subscribe(topic)
         res = Channel(topic, self)
-        self.channels[topic] = res
+
+        if topic not in self.channels:
+            self.channels[topic] = set()
+        self.channels[topic].add(res)
         return res

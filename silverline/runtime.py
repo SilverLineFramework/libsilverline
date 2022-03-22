@@ -3,7 +3,7 @@
 import uuid
 import json
 
-from channels import Channels
+from channels import ChannelManager
 
 
 class Registration:
@@ -89,7 +89,7 @@ class Runtime:
         self.delete = delete
 
         reg = Registration(rt_id=rt_id, name=name, apis=apis, **topics)
-        self.channels = Channels(**mqtt_args)
+        self.channels = ChannelManager(**mqtt_args)
         self.channels.will_set(reg.registration, reg.delete_msg())
 
         reg_channel = self.channels.open(reg.registration)
