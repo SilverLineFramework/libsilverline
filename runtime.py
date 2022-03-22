@@ -69,17 +69,24 @@ class Runtime:
         Passthrough to Registration topic controls.
     timeout : int
         Timeout in milliseconds for runtime registration.
+    create : callable
+        Callback on CREATE_MODULE
+    delete : callable
+        Callback on DELETE_MODULE
     """
 
     def __init__(
             self, rt_id=None, name="Special Runtime", apis=["special"],
-            mqtt_args={}, topics={}, timeout=5000):
+            mqtt_args={}, topics={}, timeout=5000,
+            create=None, delete=None):
         if rt_id is None:
             rt_id = str(uuid.uuid4())
         self.rt_id = rt_id
         self.name = name
         self.apis = apis
         self.timeout = timeout
+        self.create = create
+        self.delete = delete
 
         reg = Registration(rt_id=rt_id, name=name, apis=apis, **topics)
         self.channels = Channels(**mqtt_args)
@@ -99,5 +106,25 @@ class Runtime:
         for _ in range(self.timeout):
             msg = reg_channel.poll(1)
             if msg is not None:
-                return True
+                try:
+                    payload = json.loads(str(msg.payload))
+                    if payload["type"] == "arts_resp":
+                        return True
+                except json.JSONDecodeError:
+                    raise Exception("Invalid JSON: {}".format(msg.payload))
         return False
+
+    def on_ctrl_msg(self, msg):
+        """Get type of control message."""
+        try:
+            body = json.loads(str(msg.payload))
+        except json.JSONDecodeError:
+            print("[Warning] Invalid json: {}".format(str(msg.payload)))
+            return
+
+        if msg["action"] == "create":
+            self.create(body)
+        if msg["action"] == "delete":
+            self.delete(body)
+        else:
+            raise Exception("Could not determine message type: {}".format(msg))
