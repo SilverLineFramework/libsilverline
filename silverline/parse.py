@@ -28,8 +28,8 @@ def benchmark(parser):
 
     # Profiling
     g.add_argument(
-        "--mode", help="Profiling mode (passive, active, timed)",
-        default="passive")
+        "--mode", help="Profiling mode (passive, active, timed, run)",
+        default="run")
     g.add_argument(
         "--time", help="Total time limit (seconds) for timed profiling mode",
         type=float, default=60.)

@@ -2,6 +2,9 @@
 
 from tqdm import tqdm
 import time
+import threading
+
+from .data import DirichletProcess
 
 
 class ActiveProfiler:
@@ -26,13 +29,10 @@ class ActiveProfiler:
         If >=0, prints a progress bar at this position.
     desc : str
         Runtime name (displayed in progress bar).
-    semaphore : threading.Semaphore
-        If not None, notifies after completion.
     """
 
     def __init__(
-            self, data, client, module, n=100, delay=0.1, pbar=-1, desc='rt',
-            semaphore=None):
+            self, data, client, module, n=100, delay=0.1, pbar=-1, desc='rt'):
 
         self.data = data
         self.client = client
@@ -44,7 +44,8 @@ class ActiveProfiler:
         self.n = n
         self.delay = delay
         self.topic = "benchmark/in/{}".format(module)
-        self.semaphore = semaphore
+        self.semaphore = threading.Semaphore()
+        self.semaphore.acquire()
 
         self.client.register_callback(
             "benchmark/out/{}".format(module), self.callback)
@@ -54,8 +55,12 @@ class ActiveProfiler:
         else:
             self.pbar = None
 
-        if self.semaphore:
-            self.semaphore.acquire()
+    @classmethod
+    def from_args(cls, args, client, module, pbar=-1, desc='rt'):
+        """Construct from namespace such as ArgumentParser."""
+        return cls(
+            DirichletProcess.from_args(args), client, module, n=args.n,
+            delay=args.delay, pbar=pbar, desc=desc)
 
     def callback(self, _):
         """Callback for triggering the next period."""
@@ -65,11 +70,21 @@ class ActiveProfiler:
 
         if self.idx >= self.n:
             self.client.publish(self.topic, b"exit")
-            if self.semaphore:
-                self.semaphore.release()
+            self.semaphore.release()
         else:
             time.sleep(self.delay)
-            self.client.publish(self.topic, self.data.random_buffer())
+            self.client.publish(self.topic, self.data.generate())
+
+    @staticmethod
+    def run(profilers):
+        """Run profilers and join on completion."""
+        # Join on all "threads"; can't use thread.join() since MQTT is not
+        # guaranteed to actually have real threads for each callback
+        for p in profilers:
+            p.semaphore.acquire()
+        for p in profilers:
+            if p.pbar is not None:
+                p.pbar.close()
 
 
 class TimedProfiler:
@@ -88,30 +103,83 @@ class TimedProfiler:
     ------------
     delay : float
         Delay in seconds between periods.
-    semaphore : threading.Semaphore
-        If not None, notifies after completion.
     """
 
-    def __init__(self, data, client, module, delay=0.1, semaphore=None):
+    def __init__(self, data, client, module, delay=0.1):
 
         self.data = data
         self.client = client
 
         self.delay = delay
         self.topic = "benchmark/in/{}".format(module)
-        self.semaphore = semaphore
+        self.semaphore = threading.Semaphore()
+        self.semaphore.acquire()
 
         self.client.register_callback(
             "benchmark/out/{}".format(module), self.callback)
 
         self.done = False
 
+    @classmethod
+    def from_args(cls, args, client, module):
+        """Construct from namespace such as ArgumentParser."""
+        return cls(
+            DirichletProcess.from_args(args), client, module, delay=args.delay)
+
     def callback(self, _):
         """Callback for triggering the next period."""
         if self.done:
             self.client.publish(self.topic, b"exit")
-            if self.semaphore:
-                self.semaphore.release()
+            self.semaphore.release()
         else:
             time.sleep(self.delay)
-            self.client.publish(self.topic, self.data.random_buffer())
+            self.client.publish(self.topic, self.data.generate())
+
+    @staticmethod
+    def run(profilers, duration=60):
+        """Run profilers and terminate after timeout."""
+        for _ in tqdm(range(100)):
+            time.sleep(duration / 100)
+
+        for p in profilers:
+            p.done = True
+        for p in profilers:
+            p.semaphore.acquire()
+
+
+class PassiveProfiler:
+    """Passive time-limited profiler.
+
+    Parameters
+    ----------
+    client : paho.mqtt.client
+        Mqtt client interface.
+    module : str
+        Module UUID to interact with.
+    """
+
+    def __init__(self, client, module):
+
+        self.client = client
+        self.topic = "benchmark/in/{}".format(module)
+
+        self.semaphore = threading.Semaphore()
+        self.semaphore.acquire()
+
+        self.client.register_callback(
+            "benchmark/out/{}".format(module), self.callback)
+
+    def callback(self, _):
+        """Callback to ensure the last iteration finishes."""
+        self.semaphore.release()
+
+    @staticmethod
+    def run(profilers, duration=60):
+        """Terminate modules after timeout."""
+        for _ in tqdm(range(100)):
+            time.sleep(duration / 100)
+
+        for p in profilers:
+            p.client.publish(p.topic, b"exit")
+        for p in profilers:
+            p.semaphore.acquire()

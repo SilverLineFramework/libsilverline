@@ -136,6 +136,26 @@ class Client(mqtt.Client):
         }, target)
         return module_uuid
 
+    def create_module_args(self, args, runtime, path):
+        """Create module from arguments.
+
+        Parameters
+        ----------
+        args : object
+            Namespace such as ArgumentParser containing configuration.
+        runtime : str
+            Target Runtime ID.
+        path : str
+            Target executable/script filepath.
+        """
+        if args.type == 'PY':
+            self.create_module_py(
+                runtime, name=path, aot=args.aot, path=path, argv=args.argv,
+                env=args.env)
+        else:
+            return self.create_module_wasm(
+                runtime, name=path, path=path, argv=args.argv, env=args.env)
+
     def register_callback(self, topic, callback):
         """Subscribe to topic and register callback for that topic."""
         self.subscribe(topic)

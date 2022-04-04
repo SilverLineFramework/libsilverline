@@ -1,4 +1,4 @@
-"""Dirichlet process for generating benchmark data."""
+"""Benchmark data generation schemes."""
 
 import os
 import numpy as np
@@ -21,9 +21,14 @@ class DirichletProcess:
         self.prior = prior
         self.alpha = alpha
 
+    @classmethod
+    def from_args(cls, args):
+        """Construct from namespace such as ArgumentParser."""
+        return cls(
+            lambda: np.random.geometric(1 / args.mean_size), alpha=args.alpha)
+
     def draw(self):
         """Sample from DP and update hidden state."""
-
         weights = [self.alpha] + self.tables
         weights = np.array(weights) / np.sum(weights)
         idx = np.random.choice(len(weights), 1, p=weights)[0]
@@ -35,7 +40,7 @@ class DirichletProcess:
             self.tables[idx - 1] += 1
             return self.values[idx - 1]
 
-    def random_buffer(self, min_size=4):
+    def generate(self, min_size=4):
         """Generate random buffer with size drawn from this DP."""
         size = self.draw() + min_size
         return b">>> " + os.urandom(size - 4)

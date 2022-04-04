@@ -1,12 +1,12 @@
 """Runtime benchmark manager."""
 
 from .client import Client
-from .dp import DirichletProcess
-from .profilers import ActiveProfiler, TimedProfiler
+from .data import DirichletProcess
+from .profilers import ActiveProfiler, TimedProfiler, PassiveProfiler
 
 
 __all__ = [
     "Client",
     "DirichletProcess",
-    "ActiveProfiler", "TimedProfiler",
+    "ActiveProfiler", "TimedProfiler", "PassiveProfiler"
 ]
