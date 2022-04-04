@@ -55,9 +55,7 @@ class Modes:
         pass
 
 
-if __name__ == '__main__':
-
-    args = parse_args(parse.http, parse.mqtt, parse.benchmark)
+def _main():
     arts = Client.from_args(args)
 
     tqdm.write("[Profiling] {} Runtimes: {}".format(
@@ -71,3 +69,8 @@ if __name__ == '__main__':
         getattr(Modes, args.mode)(args, arts, modules)
 
     arts.loop_stop()
+
+
+if __name__ == '__main__':
+    args = parse_args(parse.http, parse.mqtt, parse.benchmark)
+    _main(args)

@@ -11,9 +11,7 @@ def _arg(parser):
         help="Runtimes to stop; if empty, stops all runtimes.", default=[])
 
 
-if __name__ == '__main__':
-
-    args = parse_args(parse.mqtt, parse.http, _arg)
+def _main(args):
     arts = Client.from_args(args)
     runtimes = arts.get_runtimes()
     if len(args.runtime) > 0:
@@ -29,3 +27,8 @@ if __name__ == '__main__':
             arts.delete_runtime(rt_id, name=rt)
 
     arts.loop_stop()
+
+
+if __name__ == '__main__':
+    args = parse_args(parse.mqtt, parse.http, _arg)
+    _main(args)
