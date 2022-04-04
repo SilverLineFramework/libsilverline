@@ -10,7 +10,7 @@ def mqtt(parser):
     g = parser.add_argument_group("MQTT Options")
     g.add_argument("--mqtt", help="MQTT Host address", default="localhost")
     g.add_argument("--mqtt_port", help="MQTT port", default=1883, type=int)
-    g.add_argument("--username", help="Username", default="cli")
+    g.add_argument("--mqtt_username", help="Username", default="cli")
     g.add_argument("--pwd", help="Password file", default="mqtt_pwd.txt")
     g.add_argument("--ssl", help="Use SSL (mqtt-secure)", action="store_true")
     g.set_defaults(ssl=False)
