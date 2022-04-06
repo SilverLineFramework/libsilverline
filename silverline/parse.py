@@ -5,6 +5,25 @@ import sys
 from argparse import ArgumentParser
 
 
+def mqtt(parser):
+    """Args for MQTT connection."""
+    g = parser.add_argument_group("MQTT Options")
+    g.add_argument("--mqtt", help="MQTT Host address", default="localhost")
+    g.add_argument("--mqtt_port", help="MQTT port", default=1883, type=int)
+    g.add_argument("--mqtt_username", help="Username", default="cli")
+    g.add_argument("--pwd", help="Password file", default="mqtt_pwd.txt")
+    g.add_argument("--ssl", help="Use SSL (mqtt-secure)", action="store_true")
+    g.set_defaults(ssl=False)
+
+
+def http(parser):
+    """Args for HTTP interface."""
+    g = parser.add_argument_group("HTTP Options")
+    g.add_argument(
+        "--http", help="Orchestrator HTTP hostname", default="localhost")
+    g.add_argument("--http_port", help="Orchestrator HTTP port", default=8000)
+
+
 def benchmark(parser):
     """Args for benchmark spawning."""
     # Target
@@ -45,36 +64,6 @@ def benchmark(parser):
     g.add_argument(
         "--delay", default=0.1, type=float,
         help="Delay between iterations for active/timed profiling mode")
-
-
-def mqtt(parser):
-    """Args for MQTT connection."""
-    g = parser.add_argument_group("MQTT Options")
-    g.add_argument("--mqtt", help="MQTT Host address", default="localhost")
-    g.add_argument("--mqtt_port", help="MQTT port", default=1883, type=int)
-    g.add_argument("--username", help="Username", default="cli")
-    g.add_argument("--pwd", help="Password file", default="mqtt_pwd.txt")
-    g.add_argument("--ssl", help="Use SSL (mqtt-secure)", action="store_true")
-    g.set_defaults(ssl=False)
-
-
-def http(parser):
-    """Args for HTTP interface."""
-    g = parser.add_argument_group("HTTP Options")
-    g.add_argument(
-        "--http", help="Orchestrator HTTP hostname", default="localhost")
-    g.add_argument("--http_port", help="Orchestrator HTTP port", default=8000)
-
-
-def cluster(parser):
-    """Args for Cluster status and manifest."""
-    g = parser.add_argument_group("Cluster Options")
-    g.add_argument(
-        "--manifest", help="Device specification .tsv file",
-        default="devices.tsv")
-    g.add_argument(
-        "--domain", help="Cluster hostname domain suffix",
-        default=".arena.andrew.cmu.edu")
 
 
 def _get_cfg():

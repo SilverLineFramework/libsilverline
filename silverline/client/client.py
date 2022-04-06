@@ -24,7 +24,7 @@ class Client(mqtt.Client):
         Orchestrator HTTP server port.
     pwd : str
         MQTT password file
-    username : str
+    mqtt_username : str
         MQTT username
     ssl : bool
         Whether to use SSL.
@@ -34,8 +34,8 @@ class Client(mqtt.Client):
 
     def __init__(
             self, mqtt="localhost", mqtt_port=1883, pwd="mqtt_pwd.txt",
-            username="cli", use_ssl=False, http="localhost", http_port=8000,
-            connect=True):
+            mqtt_username="cli", use_ssl=False, http="localhost",
+            http_port=8000, connect=True):
 
         self.callbacks = {}
         self.arts_api = "http://{}:{}/arts-api/v1".format(http, http_port)
@@ -48,7 +48,7 @@ class Client(mqtt.Client):
 
             with open(pwd, 'r') as f:
                 passwd = f.read().rstrip('\n')
-            self.username_pw_set(username, passwd)
+            self.username_pw_set(mqtt_username, passwd)
             if use_ssl:
                 self.tls_set(cert_reqs=ssl.CERT_NONE)
             self.connect(mqtt, mqtt_port, 60)
@@ -62,7 +62,7 @@ class Client(mqtt.Client):
         """Construct from namespace such as ArgumentParser."""
         return cls(
             mqtt=args.mqtt, mqtt_port=args.mqtt_port, pwd=args.pwd,
-            username=args.username, use_ssl=args.ssl, http=args.http,
+            mqtt_username=args.mqtt_username, use_ssl=args.ssl, http=args.http,
             http_port=args.http_port, connect=connect)
 
     def on_connect(self, mqttc, obj, flags, rc):
