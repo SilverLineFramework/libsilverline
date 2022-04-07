@@ -53,7 +53,7 @@ class Trace:
         if k not in self.data:
             v = self.chunks[0][k]
             self.data[k] = np.zeros(
-                [self.size] + list(v.shape)[1:], dtype=v.type)
+                [self.size] + list(v.shape)[1:], dtype=v.dtype)
 
             idx = 0
             for c in self.chunks:
@@ -73,28 +73,24 @@ class Trace:
 
         return {k: self._get_array(k) for k in keys}
 
-    def dataframe(self):
+    def dataframe(self, keys=None):
         """Load as dataframe."""
-        raw = self.arrays()
+        return pd.DataFrame(self.arrays(keys=keys))
 
-        data = {
-            k: v for k, v in raw.items()
-            if k not in {'opcodes', 'runtime_id', 'module_id'}
-        }
-        data['module_id'], data['runtime_id'] = self._get_uuids()
-        return pd.DataFrame(data)
-
-    def filter(self, **kwargs):
+    def filter(self, keys=None, **kwargs):
         """Load dataframe with given filters.
 
         Special Keys: if `runtime=` or `module=` are passed, the result will
         be filtered by their name instead. Use `runtime_id` and `module_id`
         to look up their UUID directly.
         """
-        df = self.dataframe()
+        if keys is not None:
+            keys += ["runtime_id", "module_id"]
+
+        df = self.dataframe(keys=keys)
         for k, v in kwargs.items():
             if k in self.manifest:
-                k = k + "_id"
                 v = self.manifest[k][v]
+                k = k + "_id"
             df = df[df[k] == v]
         return df

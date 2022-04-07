@@ -24,7 +24,7 @@ class Session:
 
         self.manifest = {"runtimes": {}, "modules": {}, "files": {}}
         for d in dir:
-            with open(os.path.join(dir, "manifest.json")) as f:
+            with open(os.path.join(d, "manifest.json")) as f:
                 manifest = json.load(f)
                 self.manifest["runtimes"].update(manifest["runtimes"])
                 self.manifest["modules"].update(manifest["modules"])
@@ -35,7 +35,7 @@ class Session:
 
         self.runtimes = list(set(
             v for _, v in self.manifest["runtimes"].items()))
-        self.files = [v for _, v in self.manifest["files"]]
+        self.files = list(self.manifest["files"].keys())
         self.traces = {}
 
     def get(self, file):
@@ -51,8 +51,7 @@ class Session:
         file = self.manifest["files"].get(file, file)
         if file not in self.traces:
             try:
-                self.traces[file] = Trace(
-                    dir=os.path.join(self.dir, file), manifest=self.manifest)
+                self.traces[file] = Trace(dir=file, manifest=self.manifest)
             except FileNotFoundError:
                 self.traces[file] = None
 
