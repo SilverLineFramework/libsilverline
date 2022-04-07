@@ -3,7 +3,7 @@
 import os
 import json
 
-from .load import Trace
+from .load import Trace, SplitTrace
 
 
 class Session:
@@ -51,7 +51,11 @@ class Session:
         file = self.manifest["files"].get(file, file)
         if file not in self.traces:
             try:
-                self.traces[file] = Trace(dir=file, manifest=self.manifest)
+                if file.endswith(".npz"):
+                    self.traces[file] = Trace(dir=file, manifest=self.manifest)
+                else:
+                    self.traces[file] = SplitTrace(
+                        dir=file, manifest=self.manifest)
             except FileNotFoundError:
                 self.traces[file] = None
 
