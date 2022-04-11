@@ -177,7 +177,7 @@ class Client(mqtt.Client):
 
         def _lookup(rt):
             try:
-                return rt_list(rt)
+                return rt_list[rt]
             except KeyError:
                 return ValueError("Runtime not found: {}".format(rt))
 
