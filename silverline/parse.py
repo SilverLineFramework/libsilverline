@@ -19,16 +19,22 @@ class ArgumentParser(argparse.ArgumentParser):
             "Config file to load; priority is (1) explicitly passed args, "
             "(2) config file, (3) defaults"))
 
-    def _add_arg(self, parser, pdoc, psig):
+    def _add_arg(self, parser, pdoc, psig, aliases):
         if psig:
             default = psig.default
             dtype = type(default)
         else:
             default = None
             dtype = str
-        parser.add_argument(
-            "--{}".format(pdoc.arg_name), type=dtype,
-            help=pdoc.description.replace("\n", " "), default=default)
+
+        names = ["--{}".format(pdoc.arg_name)] + aliases.get(pdoc.arg_name, [])
+        desc = pdoc.description.replace("\n", " ")
+
+        if dtype is bool:
+            parser.add_argument(*names, help=desc, action="store_true")
+            self.set_defaults(**{pdoc.arg_name: False})
+        else:
+            parser.add_argument(*names, type=dtype, help=desc, default=default)
         return pdoc.arg_name
 
     def set_default_func(self, **kwargs):
@@ -43,7 +49,7 @@ class ArgumentParser(argparse.ArgumentParser):
         return super().add_argument(*args, **kwargs)
 
     def add_to_parser(
-            self, name, func, group, prefix="", exclude=[]):
+            self, name, func, group, prefix="", exclude=[], aliases={}):
         """Add function parameters to parser.
 
         Parameters
@@ -58,6 +64,8 @@ class ArgumentParser(argparse.ArgumentParser):
             Arguments to exclude.
         prefix : str
             Prefix to prepend to argument name.
+        aliases : dict
+            Additional aliases for arguments (i.e. short flags)
 
         Returns
         -------
@@ -68,9 +76,11 @@ class ArgumentParser(argparse.ArgumentParser):
 
         doc = parse(func.__doc__, style=DocstringStyle.NUMPYDOC)
         sig = inspect.signature(func)
+
         self._group_names[name] = (
             prefix, [
-                self._add_arg(parser, d, sig.parameters.get(d.arg_name))
+                self._add_arg(
+                    parser, d, sig.parameters.get(d.arg_name), aliases)
                 for d in doc.params if d.arg_name not in exclude
             ])
 
