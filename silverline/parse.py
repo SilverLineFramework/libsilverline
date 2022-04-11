@@ -15,7 +15,7 @@ class ArgumentParser(argparse.ArgumentParser):
         self._arg_names = []
         self._defaults_func = {}
         super().__init__(*args, **kwargs)
-        super().add_argument("--config", help=(
+        self.add_argument("--config", help=(
             "Config file to load; priority is (1) explicitly passed args, "
             "(2) config file, (3) defaults"))
 
@@ -83,14 +83,14 @@ class ArgumentParser(argparse.ArgumentParser):
                 self.set_defaults(**json.load(f))
 
         # Func defaults
-        args = super().parse_args()
+        args = super().parse_args(argv)
         self.set_defaults(**{
             k: v(args) for k, v in self._defaults_func.items()
         })
 
         # Actual args
         parsed = {}
-        args = super().parse_args()
+        args = super().parse_args(argv)
         for name, (prefix, group_args) in self._group_names.items():
             parsed[name] = {
                 arg.replace(prefix, ''): getattr(args, arg)
