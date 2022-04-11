@@ -5,27 +5,22 @@ import numpy as np
 
 
 class DirichletProcess:
-    """Dirichlet process implementation.
+    """Dirichlet Process.
 
     Parameters
     ----------
-    prior : callable
-        Prior distribution for each dirichlet process cluster.
+    prior
+        Distribution for each dirichlet process cluster.
     alpha : float
         Dirichlet process new table probability.
     """
 
-    def __init__(self, prior, alpha=1):
+    def __init__(self, prior, alpha=1.):
         self.tables = []
         self.values = []
+
         self.prior = prior
         self.alpha = alpha
-
-    @classmethod
-    def from_args(cls, args):
-        """Construct from namespace such as ArgumentParser."""
-        return cls(
-            lambda: np.random.geometric(1 / args.mean_size), alpha=args.alpha)
 
     def draw(self):
         """Sample from DP and update hidden state."""

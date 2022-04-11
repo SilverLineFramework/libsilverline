@@ -12,8 +12,8 @@ import paho.mqtt.client as mqtt
 class Client(mqtt.Client):
     """SilverLine Interface.
 
-    Keyword Args
-    ------------
+    Parameters
+    ----------
     mqtt : str
         MQTT host server address.
     mqtt_port : int
@@ -23,13 +23,13 @@ class Client(mqtt.Client):
     http_port : int
         Orchestrator HTTP server port.
     pwd : str
-        MQTT password file
+        MQTT password file.
     mqtt_username : str
         MQTT username
-    ssl : bool
-        Whether to use SSL.
+    use_ssl : bool
+        Use SSL (mqtt-secure) if True.
     connect : bool
-        If False, don't connect to MQTT.
+        Connect to MQTT on initialization if True.
     """
 
     def __init__(
@@ -56,14 +56,6 @@ class Client(mqtt.Client):
             # Waiting for on_connect to release
             self.loop_start()
             self.semaphore.acquire()
-
-    @classmethod
-    def from_args(cls, args, connect=True):
-        """Construct from namespace such as ArgumentParser."""
-        return cls(
-            mqtt=args.mqtt, mqtt_port=args.mqtt_port, pwd=args.pwd,
-            mqtt_username=args.mqtt_username, use_ssl=args.ssl, http=args.http,
-            http_port=args.http_port, connect=connect)
 
     def on_connect(self, mqttc, obj, flags, rc):
         """On connect callback."""
@@ -136,25 +128,60 @@ class Client(mqtt.Client):
         }, target)
         return module_uuid
 
-    def create_module_args(self, args, runtime, path):
-        """Create module from arguments.
+    def create_module(
+            self, runtime, name="module", path="wasm/apps/helloworld.wasm",
+            argv=[], env=[], filetype="PY", aot=False):
+        """Create module.
 
         Parameters
         ----------
-        args : object
-            Namespace such as ArgumentParser containing configuration.
         runtime : str
-            Target Runtime ID.
+            Runtime ID.
+        name : str
+            Module name.
         path : str
-            Target executable/script filepath.
+            Filepath to module binary/script, relative to the WASM/WASI base
+            directory used by the runtime.
+        argv : str[]
+            Argument passthrough to the module.
+        env : str[]
+            Environment variables to set.
+        filetype : str
+            Module type; PY or WA.
+        aot : bool
+            If running a python module, whether to use aot or interpreted.
+
+        Returns
+        -------
+        str
+            ID of created module.
         """
-        if args.type == 'PY':
-            self.create_module_py(
-                runtime, name=path, aot=args.aot, path=path, argv=args.argv,
-                env=args.env)
+        if filetype == "PY":
+            return self.create_module_py(
+                runtime, name=name, path=path, aot=aot, argv=argv, env=env)
         else:
             return self.create_module_wasm(
-                runtime, name=path, path=path, argv=args.argv, env=args.env)
+                runtime, name=name, path=path, argv=argv, env=env)
+
+    def create_modules(
+            self, runtimes, path="wasm/apps/helloworld.wasm", **kwargs):
+        """Create multiple runtimes; returns UUID as a dictionary."""
+        return {
+            (rt, path): self.create_module(rt, path=path, **kwargs)
+            for rt in runtimes
+        }
+
+    def create_modules_name(self, runtimes, **kwargs):
+        """Create modules specified by name instead of UUID."""
+        rt_list = self.get_runtimes()
+
+        def _lookup(rt):
+            try:
+                return rt_list(rt)
+            except KeyError:
+                return ValueError("Runtime not found: {}".format(rt))
+
+        return self.create_modules([_lookup(rt) for rt in runtimes], **kwargs)
 
     def register_callback(self, topic, callback):
         """Subscribe to topic and register callback for that topic."""

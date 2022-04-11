@@ -1,28 +1,32 @@
 """Stop all runtimes by sending a DELETE_RUNTIME request."""
 
 from .client import Client
+from .parse import ArgumentParser
 
 
-def _parse(parser):
-    g = parser.add_argument_group("Stop Runtime")
-    g.add_argument(
+def _parse():
+    p = ArgumentParser()
+    p.add_argument(
         "--runtime", nargs="+",
         help="Runtimes to stop; if empty, stops all runtimes.", default=[])
+    p.add_to_parser("client", Client, group="SilverLine Client")
+    return p.parse_args()
 
 
 def _main(args):
-    arts = Client.from_args(args)
-    runtimes = arts.get_runtimes()
+    client = Client(**args["client"])
+    runtimes = client.get_runtimes()
     if len(args.runtime) > 0:
         for rt in args.runtime:
             try:
                 print("Stopping runtime {} [{}]".format(rt, runtimes[rt]))
-                arts.delete_runtime(runtimes[rt], name=rt)
+                client.delete_runtime(runtimes[rt], name=rt)
             except KeyError:
                 print("Runtime not found: {}".format(rt))
     else:
+        print("Stopping all runtimes: {}".format(runtimes))
         for rt, rt_id in runtimes.items():
             print("Stopping runtime {} [{}]".format(rt, rt_id))
-            arts.delete_runtime(rt_id, name=rt)
+            client.delete_runtime(rt_id, name=rt)
 
-    arts.loop_stop()
+    client.loop_stop()

@@ -3,6 +3,7 @@
 from tqdm import tqdm
 import time
 import threading
+import numpy as np
 
 from .data import DirichletProcess
 
@@ -12,15 +13,12 @@ class ActiveProfiler:
 
     Parameters
     ----------
-    data : callable
-        Generator for random input data.
-    client : paho.mqtt.client
-        Mqtt client interface.
+    client : Client
+        SilverLine mqtt client interface.
     module : str
         Module UUID to interact with.
-
-    Keyword Args
-    ------------
+    data : DirichletProcess
+        Generator for random input data.
     n : int
         Number of periods to run.
     delay : float
@@ -32,7 +30,7 @@ class ActiveProfiler:
     """
 
     def __init__(
-            self, data, client, module, n=100, delay=0.1, pbar=-1, desc='rt'):
+            self, client, module, data, n=100, delay=0.1, pbar=-1, desc='rt'):
 
         self.data = data
         self.client = client
@@ -54,13 +52,6 @@ class ActiveProfiler:
             self.pbar = tqdm(total=n, position=pbar, desc=desc)
         else:
             self.pbar = None
-
-    @classmethod
-    def from_args(cls, args, client, module, pbar=-1, desc='rt'):
-        """Construct from namespace such as ArgumentParser."""
-        return cls(
-            DirichletProcess.from_args(args), client, module, n=args.n,
-            delay=args.delay, pbar=pbar, desc=desc)
 
     def callback(self, _):
         """Callback for triggering the next period."""
@@ -92,20 +83,17 @@ class TimedProfiler:
 
     Parameters
     ----------
-    data : callable
-        Generator for random input data.
-    client : paho.mqtt.client
-        Mqtt client interface.
+    client : Client
+        SilverLine mqtt client interface.
     module : str
         Module UUID to interact with.
-
-    Keyword Args
-    ------------
+    data : DirichletProcess
+        Generator for random input data.
     delay : float
         Delay in seconds between periods.
     """
 
-    def __init__(self, data, client, module, delay=0.1):
+    def __init__(self, client, module, data, delay=0.1):
 
         self.data = data
         self.client = client
@@ -119,12 +107,6 @@ class TimedProfiler:
             "benchmark/out/{}".format(module), self.callback)
 
         self.done = False
-
-    @classmethod
-    def from_args(cls, args, client, module):
-        """Construct from namespace such as ArgumentParser."""
-        return cls(
-            DirichletProcess.from_args(args), client, module, delay=args.delay)
 
     def callback(self, _):
         """Callback for triggering the next period."""
@@ -152,8 +134,8 @@ class PassiveProfiler:
 
     Parameters
     ----------
-    client : paho.mqtt.client
-        Mqtt client interface.
+    client : Client
+        SilverLine mqtt client interface.
     module : str
         Module UUID to interact with.
     """
@@ -183,3 +165,56 @@ class PassiveProfiler:
             p.client.publish(p.topic, b"exit")
         for p in profilers:
             p.semaphore.acquire()
+
+
+def run_profilers(
+        client, modules,
+        type="run", mean_size=1000., alpha=1., n=100, delay=0.1, duration=60.):
+    """Create and run profilers.
+
+    Parameters
+    ----------
+    client : Client
+        SilverLine client interface.
+    modules : dict
+        Dictionary containing module names (key) and IDs (value) to profile.
+    type : str
+        Profiler type. Can be: `run` (just run, do nothing), `active`
+        (active profiling with fixed rounds), `timed` (active profiling with
+        time limit), and `passive` (spawn and wait)
+    n : int
+        Number of rounds for `active` profiler.
+    delay : float
+        Delay between rounds for `active` and `timed` profilers.
+    mean_size : float
+        Samples each data packet from Geometric(1 / mean_size) for `active` and
+        `timed` profilers.
+    alpha : float
+        Dirichlet process new table probability for `active` and `timed`.
+    duration : float
+        Profiling duration for `timed` and `passive` profilers.
+    """
+    def _make_dp():
+        return DirichletProcess(
+            lambda: np.random.geometric(1 / mean_size), alpha=alpha)
+
+    if type == "active":
+        profilers = [
+            ActiveProfiler(
+                client, mod, _make_dp(), delay=delay, n=n, pbar=i, desc=rt)
+            for i, ((rt, _), mod) in enumerate(modules.items())]
+        ActiveProfiler.run(profilers)
+    elif type == "timed":
+        profilers = [
+            TimedProfiler(client, mod, _make_dp(), delay=delay)
+            for (_, mod) in modules.items()]
+        TimedProfiler.run(profilers, duration=duration)
+    elif type == "passive":
+        profilers = [
+            PassiveProfiler(client, mod)
+            for (_, mod) in modules.items()]
+        PassiveProfiler.run(profilers, duration=duration)
+    elif type == "run":
+        pass
+    else:
+        raise ValueError("Invalid profiling mode: {}".format(type))

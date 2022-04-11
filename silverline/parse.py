@@ -1,89 +1,80 @@
-"""Base argparse args."""
+"""Inspect function signature for parsing."""
 
-import json
-import sys
-from argparse import ArgumentParser
-
-
-def mqtt(parser):
-    """Args for MQTT connection."""
-    g = parser.add_argument_group("MQTT Options")
-    g.add_argument("--mqtt", help="MQTT Host address", default="localhost")
-    g.add_argument("--mqtt_port", help="MQTT port", default=1883, type=int)
-    g.add_argument("--mqtt_username", help="Username", default="cli")
-    g.add_argument("--pwd", help="Password file", default="mqtt_pwd.txt")
-    g.add_argument("--ssl", help="Use SSL (mqtt-secure)", action="store_true")
-    g.set_defaults(ssl=False)
+import inspect
+import argparse
+from docstring_parser import parse, DocstringStyle
 
 
-def http(parser):
-    """Args for HTTP interface."""
-    g = parser.add_argument_group("HTTP Options")
-    g.add_argument(
-        "--http", help="Orchestrator HTTP hostname", default="localhost")
-    g.add_argument("--http_port", help="Orchestrator HTTP port", default=8000)
+class ArgumentParser(argparse.ArgumentParser):
+    """Extension of ArgumentParser supporting addition through inspection."""
 
+    def __init__(self, *args, **kwargs):
 
-def benchmark(parser):
-    """Args for benchmark spawning."""
-    # Target
-    g = parser.add_argument_group("Benchmark Options")
-    g.add_argument("--type", help="PY or WA", default="WA")
-    g.add_argument(
-        "--path", nargs='+', help="File path(s) to execute",
-        default=["wasm/test/helloworld.wasm"])
-    g.add_argument(
-        "--argv", nargs='+', help="Module argv passthrough", default=[])
-    g.add_argument(
-        "--runtime", nargs='+', help="Target runtime names", default=["test"])
+        self._group_names = {}
+        self._arg_names = []
+        super().__init__(*args, **kwargs)
 
-    # Python only args
-    g.add_argument(
-        "--env", nargs='+', help="Module environment variables", default=[])
-    g.add_argument(
-        "--aot", help="Use AOT python for python benchmarks",
-        dest="aot", action="store_true")
-    g.set_defaults(aot=False)
+    def _add_arg(self, parser, pdoc, psig):
+        if psig:
+            default = psig.default
+            dtype = type(default)
+        else:
+            default = None
+            dtype = str
+        parser.add_argument(
+            "--{}".format(pdoc.arg_name), type=dtype,
+            help=pdoc.description.replace("\n", " "), default=default)
+        return pdoc.arg_name
 
-    # Profiling
-    g.add_argument(
-        "--mode", help="Profiling mode (passive, active, timed, run)",
-        default="run")
-    g.add_argument(
-        "--time", help="Total time limit (seconds) for timed profiling mode",
-        type=float, default=60.)
-    g.add_argument(
-        "--mean_size", default=1000, type=float,
-        help="Prior mean message size (used as input to dirichlet process)")
-    g.add_argument(
-        "--alpha", default=1, type=float,
-        help="Dirichlet Process \"new table\" parameter alpha")
-    g.add_argument(
-        "--n", default=100, type=int,
-        help="Number of iterations to test for active profiling mode")
-    g.add_argument(
-        "--delay", default=0.1, type=float,
-        help="Delay between iterations for active/timed profiling mode")
+    def add_argument(self, *args, **kwargs):
+        """Add argument to parser."""
+        if args != ('-h', '--help'):
+            self._arg_names += [
+                a.lstrip('--') for a in args if a.startswith('--')]
+        return super().add_argument(*args, **kwargs)
 
+    def add_to_parser(
+            self, name, func, group, prefix="", exclude=[]):
+        """Add function parameters to parser.
 
-def _get_cfg():
-    for arg, next in zip(sys.argv[:-1], sys.argv[1:]):
-        if arg == '--config':
-            with open(next) as f:
-                return json.load(f)
-    return {}
+        Parameters
+        ----------
+        name : str
+            Name of sub-object to create.
+        func : callable
+            Function to interpret; must have __doc__.
+        group : str
+            Argument group to create.
+        exclude : str[]
+            Arguments to exclude.
+        prefix : str
+            Prefix to prepend to argument name.
 
+        Returns
+        -------
+        str[]
+            List of arguments found in docstring.
+        """
+        parser = self.add_argument_group(group)
 
-def parse_args(*groups, desc=None):
-    """Make argument parser."""
-    parser = ArgumentParser(description=desc)
-    for g in groups:
-        g(parser)
-    parser.add_argument(
-        "--config", help=(
-            "Config file to load; priority is (1) explicitly passed args, "
-            "(2) config file, (3) defaults"))
-    parser.set_defaults(**_get_cfg())
-    args = parser.parse_args()
+        doc = parse(func.__doc__, style=DocstringStyle.NUMPYDOC)
+        sig = inspect.signature(func)
+        self._group_names[name] = (
+            prefix, [
+                self._add_arg(parser, d, sig.parameters.get(d.arg_name))
+                for d in doc.params if d.arg_name not in exclude
+            ])
 
-    return args
+    def parse_args(self):
+        """Parse arguments, grouping based on source objects."""
+        parsed = {}
+        args = super().parse_args()
+        for name, (prefix, group_args) in self._group_names.items():
+            parsed[name] = {
+                arg.replace(prefix, ''): getattr(args, arg)
+                for arg in group_args
+            }
+        for name in self._arg_names:
+            parsed[name] = getattr(args, name)
+
+        return parsed
