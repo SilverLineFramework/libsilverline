@@ -3,4 +3,4 @@
 from silverline import _run
 
 if __name__ == '__main__':
-    _run._main(_run._parse())
+    _run._main(_run._parse().parse_args())

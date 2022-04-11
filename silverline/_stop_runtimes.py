@@ -10,7 +10,7 @@ def _parse():
         "--runtime", nargs="+",
         help="Runtimes to stop; if empty, stops all runtimes.", default=[])
     p.add_to_parser("client", Client, group="SilverLine Client")
-    return p.parse_args()
+    return p
 
 
 def _main(args):

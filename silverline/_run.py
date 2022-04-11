@@ -18,7 +18,7 @@ def _parse():
     p.add_to_parser(
         "profile", run_profilers,
         group="Profiling", exclude=["client", "modules"])
-    return p.parse_args()
+    return p
 
 
 def _main(args):

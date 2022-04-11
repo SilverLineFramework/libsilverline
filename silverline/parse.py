@@ -2,6 +2,7 @@
 
 import inspect
 import argparse
+import json
 from docstring_parser import parse, DocstringStyle
 
 
@@ -12,7 +13,11 @@ class ArgumentParser(argparse.ArgumentParser):
 
         self._group_names = {}
         self._arg_names = []
+        self._defaults_func = {}
         super().__init__(*args, **kwargs)
+        super().add_argument("--config", help=(
+            "Config file to load; priority is (1) explicitly passed args, "
+            "(2) config file, (3) defaults"))
 
     def _add_arg(self, parser, pdoc, psig):
         if psig:
@@ -25,6 +30,10 @@ class ArgumentParser(argparse.ArgumentParser):
             "--{}".format(pdoc.arg_name), type=dtype,
             help=pdoc.description.replace("\n", " "), default=default)
         return pdoc.arg_name
+
+    def set_default_func(self, **kwargs):
+        """Set defaults (to be executed as function)."""
+        self._defaults_func.update(kwargs)
 
     def add_argument(self, *args, **kwargs):
         """Add argument to parser."""
@@ -67,6 +76,20 @@ class ArgumentParser(argparse.ArgumentParser):
 
     def parse_args(self):
         """Parse arguments, grouping based on source objects."""
+        # Config
+        args = super().parse_args()
+        if args.config:
+            print(args.config)
+            with open(args.config) as f:
+                self.set_defaults(**json.load(f))
+
+        # Func defaults
+        args = super().parse_args()
+        self.set_defaults(**{
+            k: v(args) for k, v in self._defaults_func.items()
+        })
+
+        # Actual args
         parsed = {}
         args = super().parse_args()
         for name, (prefix, group_args) in self._group_names.items():
