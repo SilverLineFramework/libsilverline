@@ -74,12 +74,11 @@ class ArgumentParser(argparse.ArgumentParser):
                 for d in doc.params if d.arg_name not in exclude
             ])
 
-    def parse_args(self):
+    def parse_args(self, argv=[]):
         """Parse arguments, grouping based on source objects."""
         # Config
-        args = super().parse_args()
+        args = super().parse_args(argv)
         if args.config:
-            print(args.config)
             with open(args.config) as f:
                 self.set_defaults(**json.load(f))
 
