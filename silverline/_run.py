@@ -24,7 +24,7 @@ def _parse():
 def _main(args):
     client = Client(**args["client"])
     modules = {}
-    for p in args.path:
+    for p in args["path"]:
         modules.update(client.create_modules_name(
             args["runtime"], path=p, **args["module"]))
     run_profilers(client, modules, **args["profile"])

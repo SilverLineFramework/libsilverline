@@ -16,8 +16,8 @@ def _parse():
 def _main(args):
     client = Client(**args["client"])
     runtimes = client.get_runtimes()
-    if len(args.runtime) > 0:
-        for rt in args.runtime:
+    if len(args["runtime"]) > 0:
+        for rt in args["runtime"]:
             try:
                 print("Stopping runtime {} [{}]".format(rt, runtimes[rt]))
                 client.delete_runtime(runtimes[rt], name=rt)
