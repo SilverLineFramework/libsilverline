@@ -11,7 +11,8 @@ def _parse():
     p.add_argument(
         "--path", nargs="+", default=["wasm/apps/helloworld.wasm"],
         help="Target file paths, relative to WASM/WASI base directory")
-    p.add_to_parser("client", Client, group="SilverLine Client")
+    p.add_to_parser(
+        "client", Client, group="SilverLine Client", exclude=["connect"])
     p.add_to_parser(
         "module", Client.create_module,
         group="Module", exclude=["runtime", "path"])

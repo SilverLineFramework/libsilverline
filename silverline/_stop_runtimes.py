@@ -9,7 +9,8 @@ def _parse():
     p.add_argument(
         "--runtime", nargs="+",
         help="Runtimes to stop; if empty, stops all runtimes.", default=[])
-    p.add_to_parser("client", Client, group="SilverLine Client")
+    p.add_to_parser(
+        "client", Client, group="SilverLine Client", exclude=["connect"])
     return p
 
 
