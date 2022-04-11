@@ -84,7 +84,7 @@ class ArgumentParser(argparse.ArgumentParser):
                 for d in doc.params if d.arg_name not in exclude
             ])
 
-    def parse_args(self, argv=[]):
+    def parse_args(self, argv=None):
         """Parse arguments, grouping based on source objects."""
         # Config
         args = super().parse_args(argv)
