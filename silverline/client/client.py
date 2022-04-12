@@ -129,8 +129,8 @@ class Client(mqtt.Client):
         return module_uuid
 
     def create_module(
-            self, runtime, name="module", path="wasm/apps/helloworld.wasm",
-            argv=[], env=[], filetype="PY", aot=False):
+            self, runtime, name="module", path="wasm/tests/helloworld.wasm",
+            argv=[], env=[], filetype="WA", aot=False):
         """Create module.
 
         Parameters
