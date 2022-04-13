@@ -126,7 +126,7 @@ class TimedProfiler:
         for p in profilers:
             p.done = True
         for p in profilers:
-            p.semaphore.acquire()
+            p.semaphore.acquire(timeout=10)
 
 
 class PassiveProfiler:
@@ -164,7 +164,7 @@ class PassiveProfiler:
         for p in profilers:
             p.client.publish(p.topic, b"exit")
         for p in profilers:
-            p.semaphore.acquire()
+            p.semaphore.acquire(timeout=10)
 
 
 def run_profilers(
