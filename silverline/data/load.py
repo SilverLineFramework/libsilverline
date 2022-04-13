@@ -41,7 +41,7 @@ class Trace:
     def _name_key(self, key, manifest):
         return {
             manifest[key]: key
-            for key in np.unique(self._get_array(key))
+            for key in np.unique(self.data[key])
         }
 
     @staticmethod

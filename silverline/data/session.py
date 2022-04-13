@@ -42,11 +42,11 @@ class Session:
         self.traces = {}
 
     def _load(self, file):
-        if file.endswith(".npz"):
-            return Trace(path=file, manifest=self.manifest)
-        else:
+        if os.path.isdir(file):
             return SplitTrace(
                 path=file, manifest=self.manifest, preload=self.preload)
+        else:
+            return Trace(path=file + ".npz", manifest=self.manifest)
 
     def get(self, file):
         """Get trace associated with a filename or id.
