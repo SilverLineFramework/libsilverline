@@ -93,13 +93,20 @@ class SplitTrace(Trace):
         Optional manifest created by the orchestrator; should have "runtimes"
         and "modules" id-name maps. If passed, will create dictionaries with
         name-id lookups.
+    preload : bool
+        Pre-load chunks instead of lazy-loading.
     """
 
-    def __init__(self, path="data", manifest=None):
+    def __init__(self, path="data", manifest=None, preload=False):
 
         self.sources = os.listdir(path)
         self.sources.sort()
-        self.chunks = [np.load(os.path.join(path, s)) for s in self.sources]
+        _sources = [os.path.join(path, s) for s in self.sources]
+        if preload:
+            self.chunks = [dict(np.load(s)) for s in _sources]
+        else:
+            self.chunks = [np.load(s) for s in _sources]
+
         self.size = sum(s['size'] for s in self.chunks)
         self.data = {}
 
@@ -110,6 +117,10 @@ class SplitTrace(Trace):
                 "runtime": self.runtimes,
                 "modules": self.modules
             }
+
+    @staticmethod
+    def _preload(d):
+        return {k: v for k, v in d.items()}
 
     def _aggregate(self, k):
         v = self.chunks[0][k]
