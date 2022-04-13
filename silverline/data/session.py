@@ -14,13 +14,16 @@ class Session:
     dir : str or str[]
         Base directory for this session. Should contain a `manifest.json`
         and directories file-1, file-2, ... for each trace.
+    preload : bool
+        Preload SplitTrace.
     """
 
-    def __init__(self, dir="data"):
+    def __init__(self, dir="data", preload=False):
 
         if isinstance(dir, str):
             dir = [dir]
         self.dir = dir
+        self.preload = preload
 
         self.manifest = {"runtimes": {}, "modules": {}, "files": {}}
         for d in dir:
@@ -38,6 +41,13 @@ class Session:
         self.files = list(self.manifest["files"].keys())
         self.traces = {}
 
+    def _load(self, file):
+        if file.endswith(".npz"):
+            return Trace(path=file, manifest=self.manifest)
+        else:
+            return SplitTrace(
+                path=file, manifest=self.manifest, preload=self.preload)
+
     def get(self, file):
         """Get trace associated with a filename or id.
 
@@ -51,11 +61,7 @@ class Session:
         file = self.manifest["files"].get(file, file)
         if file not in self.traces:
             try:
-                if file.endswith(".npz"):
-                    self.traces[file] = Trace(dir=file, manifest=self.manifest)
-                else:
-                    self.traces[file] = SplitTrace(
-                        dir=file, manifest=self.manifest)
+                self.traces[file] = self._load(file)
             except FileNotFoundError:
                 self.traces[file] = None
 
