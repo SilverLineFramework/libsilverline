@@ -152,5 +152,5 @@ class SplitTrace(Trace):
         data = self.arrays()
         data['size'] = self.size
         data['runtime_id'] = self._aggregate("runtime_id")
-        data['module_id'] = self._aggregate("moudle_id")
+        data['module_id'] = self._aggregate("module_id")
         np.savez(dst, **data)
