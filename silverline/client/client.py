@@ -98,39 +98,52 @@ class Client(mqtt.Client):
         self.publish("realm/proc/control", payload)
 
     def create_module_wasm(
-            self, target, name="module",
-            path="wasm/apps/helloworld.wasm", argv=[], env=[]):
+            self, target, name="module", path="wasm/apps/helloworld.wasm",
+            argv=[], env=[], period=10000, utilization=0.0):
         """Create WASM module."""
         module_uuid = str(uuid.uuid4())
-        self._create_module({
+        payload = {
             "uuid": module_uuid,
             "name": name,
             "filename": path,
             "filetype": "WA",
             "args": [path] + argv,
             "env": env,
-        }, target)
+        }
+        if utilization > 0:
+            payload["resources"] = {
+                "period": period,
+                "runtime": int(utilization * period)
+            }
+        self._create_module(payload, target)
         return module_uuid
 
     def create_module_py(
             self, target, name="module", aot=False, path="python/pinata.py",
-            argv=[], env=[]):
+            argv=[], env=[], period=10000, utilization=0.0):
         """Create python module."""
         python = "{t}/rustpython.{t}".format(t="aot" if aot else "wasm")
         module_uuid = str(uuid.uuid4())
-        self._create_module({
+        payload = {
             "uuid": module_uuid,
             "name": name,
             "filename": python,
             "filetype": "PY",
             "args": [python, path] + argv,
             "env": env
-        }, target)
+        }
+        if utilization > 0:
+            payload["resources"] = {
+                "period": period,
+                "runtime": int(utilization * period)
+            }
+        self._create_module(payload, target)
         return module_uuid
 
     def create_module(
             self, runtime, name="module", path="wasm/tests/helloworld.wasm",
-            argv=[], env=[], filetype="WA", aot=False):
+            argv=[], env=[], filetype="WA", aot=False, period=10000,
+            utilization=0.0):
         """Create module.
 
         Parameters
@@ -150,6 +163,10 @@ class Client(mqtt.Client):
             Module type; PY or WA.
         aot : bool
             If running a python module, whether to use aot or interpreted.
+        period : int
+            Period for sched_deadline, in microseconds.
+        utilization : float
+            Utilization for sched_deadline. If 0.0, uses CFS.
 
         Returns
         -------
@@ -161,7 +178,8 @@ class Client(mqtt.Client):
                 runtime, name=name, path=path, aot=aot, argv=argv, env=env)
         else:
             return self.create_module_wasm(
-                runtime, name=name, path=path, argv=argv, env=env)
+                runtime, name=name, path=path, argv=argv, env=env,
+                period=period, utilization=utilization)
 
     def create_modules(
             self, runtimes, path="wasm/apps/helloworld.wasm", **kwargs):
