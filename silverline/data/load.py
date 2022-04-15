@@ -41,7 +41,7 @@ class Trace:
     def _name_key(self, key, manifest):
         return {
             manifest[key]: key
-            for key in np.unique(self.data[key])
+            for key in np.unique(self.arrays(keys=[key])[key])
         }
 
     @staticmethod
@@ -117,10 +117,6 @@ class SplitTrace(Trace):
                 "runtime": self.runtimes,
                 "modules": self.modules
             }
-
-    @staticmethod
-    def _preload(d):
-        return {k: v for k, v in d.items()}
 
     def _aggregate(self, k):
         v = self.chunks[0][k]
