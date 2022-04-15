@@ -142,7 +142,7 @@ class Client(mqtt.Client):
 
     def create_module(
             self, runtime, name="module", path="wasm/tests/helloworld.wasm",
-            argv=[], env=[], filetype="WA", aot=False, period=10000,
+            argv=[], env=[], filetype="WA", aot=False, period=10000000,
             utilization=0.0):
         """Create module.
 
@@ -164,7 +164,7 @@ class Client(mqtt.Client):
         aot : bool
             If running a python module, whether to use aot or interpreted.
         period : int
-            Period for sched_deadline, in microseconds.
+            Period for sched_deadline, in nanoseconds.
         utilization : float
             Utilization for sched_deadline. If 0.0, uses CFS.
 
