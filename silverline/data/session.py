@@ -2,6 +2,8 @@
 
 import os
 import json
+import numpy as np
+from tqdm import tqdm
 
 from .load import Trace, SplitTrace
 
@@ -17,6 +19,16 @@ class Session:
     preload : bool
         Preload SplitTrace.
     """
+
+    _stats = {
+        "mean": np.mean,
+        "median": np.median,
+        "mad": lambda y: np.median(np.abs(y - np.median(y))),
+        "std": lambda y: np.sqrt(np.var(y)),
+        "n": len,
+        "min": np.min,
+        "max": np.max
+    }
 
     def __init__(self, dir="data", preload=False):
 
@@ -38,7 +50,9 @@ class Session:
 
         self.runtimes = list(set(
             v for _, v in self.manifest["runtimes"].items()))
+        self.runtimes.sort()
         self.files = list(self.manifest["files"].keys())
+        self.files.sort()
         self.traces = {}
 
     def _load(self, file):
@@ -66,3 +80,37 @@ class Session:
                 self.traces[file] = None
 
         return self.traces[file]
+
+    def stats(self, save=None):
+        """Calculate statistics.
+
+        Parameters
+        ----------
+        save : str or None
+            If not None, save results to this file.
+
+        Returns
+        -------
+        dict(str -> np.array)
+            Each entry is a (files x devices) array. Not-present entries are
+            listed as 0.
+        """
+        stats = {
+            k: np.zeros((len(self.files), len(self.runtimes)))
+            for k in self._stats
+        }
+
+        for i, file in enumerate(tqdm(self.files)):
+            trace = self.get(file)
+            if trace is not None:
+                for j, rt in enumerate(self.runtimes):
+                    y = trace.filter(
+                        runtime=rt, keys=["runtime"]
+                    ).reset_index()["runtime"][1:-1] / 10**6
+                    if len(y) > 0:
+                        for k, v in self._stats.items():
+                            stats[k][i, j] = v(y)
+
+        if save:
+            np.savez(save, **stats)
+        return stats
