@@ -104,13 +104,15 @@ class Session:
             trace = self.get(file)
             if trace is not None:
                 for j, rt in enumerate(self.runtimes):
-                    y = trace.filter(
-                        runtime=rt, keys=["runtime"]
-                    ).reset_index()["runtime"][1:-1] / 10**6
-                    if len(y) > 0:
-                        for k, v in self._stats.items():
-                            stats[k][i, j] = v(y)
-
+                    try:
+                        y = trace.filter(
+                            runtime=rt, keys=["runtime"]
+                        ).reset_index()["runtime"][1:-1] / 10**6
+                        if len(y) > 0:
+                            for k, v in self._stats.items():
+                                stats[k][i, j] = v(y)
+                    except KeyError:
+                        pass
         if save:
             np.savez(save, **stats)
         return stats
