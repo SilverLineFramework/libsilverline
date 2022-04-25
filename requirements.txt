@@ -2,3 +2,7 @@ tqdm
 docstring-parser
 numpy
 pandas
+matplotlib
+requests
+fabric
+paho-mqtt
