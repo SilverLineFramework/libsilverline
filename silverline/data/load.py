@@ -67,7 +67,7 @@ class Trace:
         to look up their UUID directly.
         """
         if keys is not None:
-            keys += ["runtime_id", "module_id"]
+            keys += keys.copy() + ["runtime_id", "module_id"]
 
         df = self.dataframe(keys=keys)
         for k, v in kwargs.items():
