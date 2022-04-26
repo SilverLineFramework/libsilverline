@@ -107,8 +107,8 @@ class Session:
                 for j, rt in enumerate(self.runtimes):
                     try:
                         y = trace.filter(
-                            runtime=rt, keys=["runtime"]
-                        ).reset_index()["runtime"][1:-1] / 10**6
+                            runtime=rt, keys=["cpu_time"]
+                        ).reset_index()["cpu_time"][1:-1] / 10**6
                         if len(y) > 0:
                             for k, v in self._stats.items():
                                 stats[k][i, j] = v(y)
