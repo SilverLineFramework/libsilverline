@@ -230,3 +230,26 @@ class Client(mqtt.Client):
         self.publish(
             "realm/proc/special",
             json.dumps({"action": "reset", "data": metadata}))
+
+    def echo(self, timeout=10.):
+        """Ask orchestrator to echo. Serves as a simple queue wait.
+
+        Parameters
+        ----------
+        timeout : float
+            Number of seconds to wait for a response.
+        """
+        waiter = Semaphore(value=0)
+        echo_id = str(uuid.uuid4())
+
+        def _waiter(args):
+            try:
+                if json.loads(args).get('data') == echo_id:
+                    waiter.release()
+            except json.JSONDecodeError:
+                pass
+
+        self.register_callback("realm/proc/echo", _waiter)
+        self.publish("realm/proc/special", json.dumps(
+            {"action": "echo", "data": echo_id}))
+        waiter.acquire(timeout=timeout)
