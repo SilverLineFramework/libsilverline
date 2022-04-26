@@ -157,7 +157,7 @@ class Session:
         """
         fig, axs = plt.subplots(
             len(self.files), len(self.runtimes),
-            figsize=(2 * len(self.runtimes), 2 * len(self.files)))
+            figsize=(2.25 * len(self.runtimes), 2 * len(self.files)))
 
         def _inner(ax, trace, rt):
             if xaxis == 'index':
