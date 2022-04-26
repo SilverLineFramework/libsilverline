@@ -118,32 +118,33 @@ class Session:
             np.savez(save, **stats)
         return stats
 
-    def _plot(self, ax, y, mode, limit):
-        mu = np.median(y)
-        if mode == 'trace':
-            if limit == 0:
-                ax.plot(y)
-            else:
-                mad = limit * np.median(np.abs(y - mu))
-                ax.plot(y)
-                ax.set_ylim(mu - mad, mu + mad)
-        elif mode == 'hist':
-            ax.hist(y, bins=np.linspace(0.5 * mu, mu * 1.5, 50))
+    def _iter_grid(self, axs, func):
+        for file, row in zip(self.files, axs):
+            trace = self.get(file)
+            for rt, ax in zip(self.runtimes, row):
+                try:
+                    func(ax, trace, rt)
+                except Exception as e:
+                    print("Error at ({}, {}): {}".format(file, rt, e))
+            row[0].set_ylabel(file.split("/")[-1])
 
     def plot_grid(
-            self, key="cpu_time", multiplier=1 / 10**6, limit=5.,
-            save="test.png", mode='trace', dpi=100):
+            self, keys=["cpu_time"], multiplier=1 / 10**6, limit_mad=5.,
+            limit_rel=0.0, save="test.png", mode='trace', dpi=100,
+            xaxis="index"):
         """Plot execution traces or histogram.
 
         Parameters
         ----------
-        key : str
-            Key to plot, i.e. cpu_time, wall_time, etc.
+        key : str[]
+            Keys to plot, i.e. cpu_time, wall_time, etc.
         multiplier : float
             Multiplier to apply to the value being plotted (unit conversion)
-        limit : float
+        limit_mad : float
             Y-axis limits for trace plots, specified relative to the MAD. If 0,
             no limits are applied.
+        limit_rel : float
+            Minimum upper and lower margin, specified relative to the median.
         save : str
             If passed, save plot using plt.savefig and close immediately.
         mode : str
@@ -151,21 +152,41 @@ class Session:
         dpi : int
             DPI to save the plot as. Large DPI (>100) may cause python to be
             killed due to OOM.
+        xaxis : str
+            X-axis data. Can be 'index' or 'time'.
         """
         fig, axs = plt.subplots(
             len(self.files), len(self.runtimes),
             figsize=(2 * len(self.runtimes), 2 * len(self.files)))
-        for file, row in zip(self.files, axs):
-            trace = self.get(file)
-            for rt, ax in zip(self.runtimes, row):
-                try:
-                    y = trace.filter(runtime=rt, keys=[key]).reset_index()[key]
-                    y = y[1:-1] * multiplier
-                    self._plot(ax, y, mode, limit)
-                    ax.set_xlabel(rt)
-                except Exception as e:
-                    print("({}, {}) --> Error:\n{}".format(file, rt, e))
-            row[0].set_ylabel(file.split("/")[-1])
+
+        def _inner(ax, trace, rt):
+            if xaxis == 'index':
+                df = trace.filter(runtime=rt, keys=keys).reset_index()
+                x = np.arange(len(df))
+            else:
+                df = trace.filter(
+                    runtime=rt, keys=keys + ["start_time"]).reset_index()
+                x = (df["start_time"][1:-1] - df["start_time"][0]) / 10**9
+
+            yy = np.array([df[k][1:-1] * multiplier for k in keys])
+            mm = np.median(yy, axis=1)
+
+            if mode == 'trace':
+                ax.plot(yy)
+
+                if limit_mad != 0:
+                    mads = np.median(np.abs(yy - mm), axis=1)
+                    radius = np.minimum(mads * limit_mad, limit_rel * mm)
+                    ax.set_ylim(np.min(mm - radius), np.max(mm + radius))
+
+            elif mode == 'hist':
+                c = np.mean(mm)
+                for y in yy:
+                    ax.hist(y, bins=np.linspace(0.5 * c, c * 1.5, 50))
+            ax.set_xlabel(rt)
+
+        self._iter_grid(axs, _inner)
+        fig.tight_layout(h_pad=0, w_pad=0)
 
         if save != "":
             fig.savefig(save, dpi=dpi)
