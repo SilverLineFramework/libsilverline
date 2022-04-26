@@ -136,7 +136,7 @@ class Session:
 
         Parameters
         ----------
-        key : str[]
+        keys : str[]
             Keys to plot, i.e. cpu_time, wall_time, etc.
         multiplier : float
             Multiplier to apply to the value being plotted (unit conversion)
@@ -172,7 +172,10 @@ class Session:
             mm = np.median(yy, axis=1)
 
             if mode == 'trace':
-                ax.plot(yy)
+                if xaxis == 'index':
+                    ax.plot(yy)
+                else:
+                    ax.plot(x, yy)
 
                 if limit_mad != 0:
                     mads = np.median(np.abs(yy - mm), axis=1)
