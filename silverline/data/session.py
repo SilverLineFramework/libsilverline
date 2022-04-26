@@ -115,7 +115,9 @@ class Session:
                     except KeyError:
                         pass
         if save:
-            np.savez(save, **stats)
+            np.savez(
+                save, files=np.array(self.files),
+                runtimes=np.array(self.runtimes), **stats)
         return stats
 
     def _iter_grid(self, axs, func):
