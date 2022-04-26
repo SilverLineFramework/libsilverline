@@ -130,7 +130,7 @@ class Session:
 
     def plot_grid(
             self, keys=["cpu_time"], multiplier=1 / 10**6, limit_mad=5.,
-            limit_rel=0.0, save="test.png", mode='trace', dpi=100,
+            limit_rel=0.05, save="test.png", mode='trace', dpi=100,
             xaxis="index"):
         """Plot execution traces or histogram.
 
@@ -173,22 +173,27 @@ class Session:
 
             if mode == 'trace':
                 if xaxis == 'index':
-                    ax.plot(yy)
+                    ax.plot(yy.T, linewidth=0.6)
                 else:
-                    ax.plot(x, yy)
+                    ax.plot(x, yy.T, linewidth=0.6)
 
                 if limit_mad != 0:
-                    mads = np.median(np.abs(yy - mm), axis=1)
-                    radius = np.minimum(mads * limit_mad, limit_rel * mm)
+                    mads = np.median(np.abs(yy - mm.reshape(-1, 1)), axis=1)
+                    radius = np.maximum(mads * limit_mad, limit_rel * mm)
                     ax.set_ylim(np.min(mm - radius), np.max(mm + radius))
 
             elif mode == 'hist':
                 c = np.mean(mm)
                 for y in yy:
                     ax.hist(y, bins=np.linspace(0.5 * c, c * 1.5, 50))
-            ax.set_xlabel(rt)
 
         self._iter_grid(axs, _inner)
+
+        for ax, rt in zip(axs[-1], self.runtimes):
+            ax.set_xlabel(rt)
+        for ax, rt in zip(axs[0], self.runtimes):
+            ax.set_title(rt)
+
         fig.tight_layout(h_pad=0, w_pad=0)
 
         if save != "":
