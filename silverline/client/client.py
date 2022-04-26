@@ -225,6 +225,8 @@ class Client(mqtt.Client):
 
         return {rt['name']: rt['uuid'] for rt in res}
 
-    def reset(self):
+    def reset(self, metadata):
         """Reset orchestrator."""
-        self.publish("realm/proc/special", json.dumps({"action": "reset"}))
+        self.publish(
+            "realm/proc/special",
+            json.dumps({"action": "reset", "data": metadata}))
