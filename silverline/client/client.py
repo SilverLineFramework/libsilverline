@@ -197,7 +197,7 @@ class Client(mqtt.Client):
             try:
                 return rt_list[rt]
             except KeyError:
-                return ValueError("Runtime not found: {}".format(rt))
+                raise ValueError("Runtime not found: {}".format(rt))
 
         return self.create_modules([_lookup(rt) for rt in runtimes], **kwargs)
 
