@@ -35,7 +35,7 @@ class Trace:
             self.modules = self._name_key("module_id", manifest["modules"])
             self.manifest = {
                 "runtime": self.runtimes,
-                "modules": self.modules
+                "module": self.modules
             }
 
     def _name_key(self, key, manifest):
@@ -115,7 +115,7 @@ class SplitTrace(Trace):
             self.modules = self._name_key("module_id", manifest["modules"])
             self.manifest = {
                 "runtime": self.runtimes,
-                "modules": self.modules
+                "module": self.modules
             }
 
     def _aggregate(self, k):

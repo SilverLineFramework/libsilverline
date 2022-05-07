@@ -100,6 +100,8 @@ class Session:
             k: np.zeros((len(self.files), len(self.runtimes)))
             for k in self._stats
         }
+        stats["files"] = np.array(self.files)
+        stats["runtimes"] = np.array(self.runtimes)
 
         for i, file in enumerate(tqdm(self.files)):
             trace = self.get(file)
@@ -115,9 +117,7 @@ class Session:
                     except KeyError:
                         pass
         if save:
-            np.savez(
-                save, files=np.array(self.files),
-                runtimes=np.array(self.runtimes), **stats)
+            np.savez(save, **stats)
         return stats
 
     def _iter_grid(self, axs, func):
@@ -133,7 +133,7 @@ class Session:
     def plot_grid(
             self, keys=["cpu_time"], multiplier=1 / 10**6, limit_mad=5.,
             limit_rel=0.05, save="test.png", mode='trace', dpi=100,
-            xaxis="index"):
+            hist_width=0.5, xaxis="index"):
         """Plot execution traces or histogram.
 
         Parameters
@@ -154,6 +154,8 @@ class Session:
         dpi : int
             DPI to save the plot as. Large DPI (>100) may cause python to be
             killed due to OOM.
+        hist_width : float
+            Radius of histogram relative to mean. If 0., no limits are applied.
         xaxis : str
             X-axis data. Can be 'index' or 'time'.
         """
@@ -187,7 +189,11 @@ class Session:
             elif mode == 'hist':
                 c = np.mean(mm)
                 for y in yy:
-                    ax.hist(y, bins=np.linspace(0.5 * c, c * 1.5, 50))
+                    if hist_width > 0:
+                        ax.hist(y, bins=np.linspace(
+                            hist_width * c, c * (1 + hist_width), 50))
+                    else:
+                        ax.hist(y, bins=50)
 
         self._iter_grid(axs, _inner)
 
