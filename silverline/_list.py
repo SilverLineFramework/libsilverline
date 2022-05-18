@@ -11,16 +11,16 @@ def _parse():
     p.add_to_parser(
         "client", Client, group="SilverLine Client", exclude=["connect"])
     p.add_argument(
-        "--style", default="full", help="List style (full or short)")
+        "--style", default="short", help="List style (full or short)")
     return p
 
 
-def _emph(x):
-    return pt.render("{}".format(x), pt.BOLD, pt.BLUE, pt.BR)
+def _emph(x, color=pt.BLUE):
+    return pt.render("{}".format(x), pt.BOLD, color, pt.BR)
 
 
 def _fmt_module(mod):
-    return "{}:{}".format(mod['uuid'][-4:], mod['name'])
+    return "{}:{}".format(_emph(mod['uuid'][-4:], pt.GREEN), mod['name'])
 
 
 def _short(runtimes):
@@ -43,7 +43,8 @@ def _full(runtimes):
         pt.print("{}:{}".format(_emph(rt['uuid']), rt['name']))
         for mod in rt['children']:
             pt.print("    {}:{} ({})".format(
-                _emph(mod['uuid'][-4:]), mod['name'], mod['filename']))
+                _emph(mod['uuid'][-4:], pt.GREEN),
+                mod['name'], mod['filename']))
 
 
 def _main(args):
