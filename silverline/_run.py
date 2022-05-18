@@ -27,7 +27,7 @@ def _main(args):
     client = Client(**args["client"])
     modules = {}
     for p in args["path"]:
-        modules.update(client.create_modules_autocomplete(
-            args["runtime"], path=p, **args["module"]))
+        modules.update(client.create_modules(
+            client.infer_runtimes(args["runtime"]), path=p, **args["module"]))
     run_profilers(client, modules, **args["profile"])
     client.loop_stop()

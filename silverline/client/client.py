@@ -183,17 +183,19 @@ class Client(mqtt.Client):
 
     def create_modules(
             self, runtimes, path="wasm/apps/helloworld.wasm", **kwargs):
-        """Create multiple runtimes; returns UUID as a dictionary."""
+        """Create multiple modules; returns UUID as a dictionary."""
         return {
             (rt, path): self.create_module(rt, path=path, **kwargs)
             for rt in runtimes
         }
 
-    def create_modules_autocomplete(self, runtimes, **kwargs):
-        """Create modules specified by alias.
+    def infer_runtimes(self, runtimes):
+        """Infer runtime UUIDs.
 
-        Accepted aliases: name (undefined behavior if multiple runtimes have
-        same name), last 4 characters of string-encoded uuid, uuid.
+        Accepted aliases:
+          - name; undefined behavior if multiple runtimes have same name
+          - last 4 characters of string-encoded UUID
+          - full UUID.
         """
         rt_name = self.get_runtimes()
         rt_uuid = {v[-4:]: v for v in rt_name.values()}
@@ -206,7 +208,7 @@ class Client(mqtt.Client):
             else:
                 raise ValueError("Runtime not found: {}".format(rt))
 
-        return self.create_modules([_lookup(rt) for rt in runtimes], **kwargs)
+        return [_lookup(rt) for rt in runtimes]
 
     def register_callback(self, topic, callback):
         """Subscribe to topic and register callback for that topic."""

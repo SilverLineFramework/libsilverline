@@ -16,15 +16,13 @@ def _parse():
 
 def _main(args):
     client = Client(**args["client"])
-    runtimes = client.get_runtimes()
     if len(args["runtime"]) > 0:
-        for rt in args["runtime"]:
-            try:
-                print("Stopping runtime {} [{}]".format(rt, runtimes[rt]))
-                client.delete_runtime(runtimes[rt], name=rt)
-            except KeyError:
-                print("Runtime not found: {}".format(rt))
+        runtimes = client.infer_runtimes(args["runtime"])
+        for rt in runtimes:
+            print("Stopping runtime {}".format(rt))
+            client.delete_runtime(rt)
     else:
+        runtimes = client.get_runtimes()
         print("Stopping all runtimes: {}".format(runtimes))
         for rt, rt_id in runtimes.items():
             print("Stopping runtime {} [{}]".format(rt, rt_id))
