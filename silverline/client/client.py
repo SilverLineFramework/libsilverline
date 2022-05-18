@@ -53,9 +53,16 @@ class Client(mqtt.Client):
                 self.tls_set(cert_reqs=ssl.CERT_NONE)
             self.connect(mqtt, mqtt_port, 60)
 
+            self.register_callback("realm/proc/err", self._error_handler)
+
             # Waiting for on_connect to release
             self.loop_start()
             self.semaphore.acquire()
+
+    def _error_handler(self, payload):
+        """Error logger."""
+        msg = json.dumps(payload)
+        print("[Error]", msg.get("data"))
 
     def on_connect(self, mqttc, obj, flags, rc):
         """On connect callback."""
@@ -140,6 +147,11 @@ class Client(mqtt.Client):
         self._create_module(payload, target)
         return module_uuid
 
+    def delete_module(self, runtime):
+        """Delete module."""
+        self.publish("realm/proc/control", json.dumps({
+            "uuid": str(uuid.uuid4()), "data": {"uuid": runtime}}))
+
     def create_module(
             self, runtime, name="module", path="wasm/tests/helloworld.wasm",
             argv=[], env=[], filetype="WA", aot=False, period=10000000,
@@ -197,8 +209,9 @@ class Client(mqtt.Client):
           - last 4 characters of string-encoded UUID
           - full UUID.
         """
-        rt_name = self.get_runtimes()
-        rt_uuid = {v[-4:]: v for v in rt_name.values()}
+        rts = self.get_runtimes()
+        rt_uuid = {v[-4:]: v for v in rts.values()}
+        rt_name = {v: k for k, v in rts.items()}
 
         def _lookup(rt):
             if rt in rt_name:
@@ -232,13 +245,15 @@ class Client(mqtt.Client):
             print(r.text)
             raise e
 
-    def get_runtimes(self, by_name=True):
+    def get_runtimes(self, full=False, by_name=False):
         """Get runtimes from REST API."""
         res = self._get_json("runtimes")
-        if by_name:
+        if full:
+            return res
+        elif by_name:
             return {rt['name']: rt['uuid'] for rt in res}
         else:
-            return res
+            return {rt['uuid']: rt['name'] for rt in res}
 
     def get_modules(self, by_runtime=True):
         """Get modules from REST API."""
