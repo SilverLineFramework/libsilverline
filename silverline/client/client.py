@@ -210,7 +210,7 @@ class Client(mqtt.Client):
           - full UUID.
         """
         rts = self.get_runtimes()
-        rt_uuid = {v[-4:]: v for v in rts.values()}
+        rt_uuid = {k[-4:]: k for k in rts.values()}
         rt_name = {v: k for k, v in rts.items()}
 
         def _lookup(rt):
