@@ -7,7 +7,8 @@ from .parse import ArgumentParser
 def _parse():
     p = ArgumentParser()
     p.add_argument(
-        "--runtime", nargs='+', help="Target runtime names.", default=["test"])
+        "--runtime", nargs='+', default=["test"],
+        help="Target runtime names, uuids, or last 4 characters of uuid.")
     p.add_argument(
         "--path", nargs="+", default=["wasm/apps/helloworld.wasm"],
         help="Target file paths, relative to WASM/WASI base directory")
@@ -26,7 +27,7 @@ def _main(args):
     client = Client(**args["client"])
     modules = {}
     for p in args["path"]:
-        modules.update(client.create_modules_name(
+        modules.update(client.create_modules_autocomplete(
             args["runtime"], path=p, **args["module"]))
     run_profilers(client, modules, **args["profile"])
     client.loop_stop()

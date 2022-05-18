@@ -189,14 +189,21 @@ class Client(mqtt.Client):
             for rt in runtimes
         }
 
-    def create_modules_name(self, runtimes, **kwargs):
-        """Create modules specified by name instead of UUID."""
-        rt_list = self.get_runtimes()
+    def create_modules_autocomplete(self, runtimes, **kwargs):
+        """Create modules specified by alias.
+
+        Accepted aliases: name (undefined behavior if multiple runtimes have
+        same name), last 4 characters of string-encoded uuid, uuid.
+        """
+        rt_name = self.get_runtimes()
+        rt_uuid = {v[-4:]: v for v in rt_name.values()}
 
         def _lookup(rt):
-            try:
-                return rt_list[rt]
-            except KeyError:
+            if rt in rt_name:
+                return rt_name[rt]
+            elif rt in rt_uuid:
+                return rt_uuid[rt]
+            else:
                 raise ValueError("Runtime not found: {}".format(rt))
 
         return self.create_modules([_lookup(rt) for rt in runtimes], **kwargs)
