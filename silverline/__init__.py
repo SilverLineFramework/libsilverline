@@ -6,10 +6,10 @@ from . import data
 
 from .parse import ArgumentParser
 
-from . import _run, _stop_runtimes, _reset, _echo, _plot
+from . import _run, _stop_runtimes, _reset, _echo, _plot, _list
 
 __all__ = [
     "ArgumentParser",
     "client", "data",  # runtime,
-    "_run", "_stop_runtimes", "_reset", "_echo", "_plot"
+    "_run", "_stop_runtimes", "_reset", "_echo", "_plot", "_list"
 ]

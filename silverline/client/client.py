@@ -214,16 +214,26 @@ class Client(mqtt.Client):
         except KeyError:
             print("[Warning] topic without handler: {}".format(topic))
 
-    def get_runtimes(self):
-        """Get runtimes from REST API."""
-        r = requests.get("{}/runtimes/".format(self.arts_api))
+    def _get_json(self, address):
+        """Get JSON from REST API."""
+        r = requests.get("{}/{}/".format(self.arts_api, address))
         try:
-            res = json.loads(r.text)
+            return json.loads(r.text)
         except Exception as e:
             print(r.text)
             raise e
 
-        return {rt['name']: rt['uuid'] for rt in res}
+    def get_runtimes(self, by_name=True):
+        """Get runtimes from REST API."""
+        res = self._get_json("runtimes")
+        if by_name:
+            return {rt['name']: rt['uuid'] for rt in res}
+        else:
+            return res
+
+    def get_modules(self, by_runtime=True):
+        """Get modules from REST API."""
+        return self._get_json("modules")
 
     def reset(self, metadata):
         """Reset orchestrator."""
