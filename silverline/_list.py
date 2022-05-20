@@ -7,7 +7,9 @@ from .parse import ArgumentParser
 
 
 def _parse():
-    p = ArgumentParser()
+    p = ArgumentParser(
+        description="List runtimes and modules running on each runtime; UUIDs "
+        "are shortened to the last 4 hex characters (2 bytes).")
     p.add_to_parser(
         "client", Client, group="SilverLine Client", exclude=["connect"])
     p.add_argument(

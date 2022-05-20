@@ -5,7 +5,9 @@ from .parse import ArgumentParser
 
 
 def _parse():
-    p = ArgumentParser()
+    p = ArgumentParser(
+        description="Send stop signal to specified runtimes, or all runtimes "
+        "by default.")
     p.add_argument(
         "--runtime", nargs="+",
         help="Runtimes to stop; if empty, stops all runtimes.", default=[])

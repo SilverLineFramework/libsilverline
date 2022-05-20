@@ -18,6 +18,11 @@ Simple client for interfacing with the orchestrator (launching modules, stopping
 
 Includes the following scripts:
 
+- ```list.py```: list runtimes and modules for each runtime.
+```sh
+python3 list.py --config config.json --style short
+```
+
 - ```run.py```: launch module(s).
 ```sh
 python3 run.py --config config.json --runtime test --path wasm/tests/helloworld.wasm --name test_helloworld

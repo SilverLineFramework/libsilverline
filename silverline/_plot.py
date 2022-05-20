@@ -5,7 +5,7 @@ from .parse import ArgumentParser
 
 
 def _parse():
-    p = ArgumentParser()
+    p = ArgumentParser(description="Generate plots from benchmarking data.")
     p.add_argument(
         "path", nargs='+', default=['data'],
         help="Directories to plot data from; must be in orchestrator format.")

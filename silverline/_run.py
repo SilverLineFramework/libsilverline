@@ -5,7 +5,9 @@ from .parse import ArgumentParser
 
 
 def _parse():
-    p = ArgumentParser()
+    p = ArgumentParser(
+        description="Launch module(s), and optionally perform profiling and "
+        "send an exit signal.")
     p.add_argument(
         "--runtime", nargs='+', default=["test"],
         help="Target runtime names, uuids, or last 4 characters of uuid.")

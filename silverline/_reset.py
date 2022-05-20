@@ -7,7 +7,7 @@ from .parse import ArgumentParser
 
 
 def _parse():
-    p = ArgumentParser()
+    p = ArgumentParser(description="Reset data collection state.")
     p.add_to_parser(
         "client", Client, group="SilverLine Client", exclude=["connect"])
     p.add_argument(
