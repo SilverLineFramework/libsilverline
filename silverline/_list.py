@@ -35,7 +35,7 @@ def _short(runtimes):
             module_uuids = "--"
 
         rows.append([
-            _emph("{}:{}".format(rt['uuid'][-4:], rt['name'])), module_uuids])
+            "{}:{}".format(_emph(rt['uuid'][-4:]), rt['name']), module_uuids])
 
     pt.table(rows, vline=False)
 
