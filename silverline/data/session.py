@@ -1,12 +1,14 @@
 """All data traces from a specific session."""
 
 import os
-import json
 import numpy as np
+import json
+import pandas as pd
 from matplotlib import pyplot as plt
+
 from tqdm import tqdm
 
-from .load import Trace, SplitTrace
+from .load import Trace
 
 
 class Session:
@@ -14,11 +16,8 @@ class Session:
 
     Parameters
     ----------
-    dir : str or str[]
-        Base directory for this session. Should contain a `manifest.json`
-        and directories file-1, file-2, ... for each trace.
-    preload : bool
-        Preload SplitTrace.
+    dir : str
+        Base directory for this session.
     """
 
     _stats = {
@@ -31,56 +30,38 @@ class Session:
         "max": np.max
     }
 
-    def __init__(self, dir="data", preload=False):
+    def __init__(self, dir="data"):
 
-        if isinstance(dir, str):
-            dir = [dir]
+        if isinstance(dir, list):
+            dir = dir[0]
+
         self.dir = dir
-        self.preload = preload
+        self.manifest = pd.read_csv(os.path.join(dir, "manifest.csv"))
+        with open(os.path.join(dir, "metadata.json")) as f:
+            self.metadata = json.load(f)
 
-        self.manifest = {"runtimes": {}, "modules": {}, "files": {}}
-        for d in dir:
-            with open(os.path.join(d, "manifest.json")) as f:
-                manifest = json.load(f)
-                self.manifest["runtimes"].update(manifest["runtimes"])
-                self.manifest["modules"].update(manifest["modules"])
-                self.manifest["files"].update({
-                    k: os.path.join(d, "file-{}".format(v))
-                    for k, v in manifest["files"].items()
-                })
-
-        self.runtimes = list(set(
-            v for _, v in self.manifest["runtimes"].items()))
-        self.runtimes.sort()
-        self.files = list(self.manifest["files"].keys())
+        self.files = self.manifest['file'].unique()
         self.files.sort()
-        self.traces = {}
+        self.runtimes = self.manifest['runtime'].unique()
+        self.runtimes.sort()
 
-    def _load(self, file):
-        if os.path.isdir(file):
-            return SplitTrace(
-                path=file, manifest=self.manifest, preload=self.preload)
+    def filter(self, **kwargs):
+        """Filter manifest."""
+        df = self.manifest
+        for k, v in kwargs.items():
+            df = df[df[k] == v]
+        return df
+
+    def _get(self, row):
+        return Trace(os.path.join(self.dir, row['file_id'], row['module_id']))
+
+    def get(self, **kwargs):
+        """Look up trace. If more than one match, returns the first."""
+        df = self.filter(**kwargs)
+        if len(df) == 0:
+            return None
         else:
-            return Trace(path=file + ".npz", manifest=self.manifest)
-
-    def get(self, file):
-        """Get trace associated with a filename or id.
-
-        Parameters
-        ----------
-        file : str
-            File name or path to trace. If passed as a file name, looks up
-            the file name through the manifest. Otherwise, uses the path
-            directly.
-        """
-        file = self.manifest["files"].get(file, file)
-        if file not in self.traces:
-            try:
-                self.traces[file] = self._load(file)
-            except FileNotFoundError:
-                self.traces[file] = None
-
-        return self.traces[file]
+            return self._get(df.iloc[0])
 
     def stats(self, save=None):
         """Calculate statistics.
@@ -104,31 +85,15 @@ class Session:
         stats["runtimes"] = np.array(self.runtimes)
 
         for i, file in enumerate(tqdm(self.files)):
-            trace = self.get(file)
-            if trace is not None:
-                for j, rt in enumerate(self.runtimes):
-                    try:
-                        y = trace.filter(
-                            runtime=rt, keys=["cpu_time"]
-                        ).reset_index()["cpu_time"][1:-1] / 10**6
-                        if len(y) > 0:
-                            for k, v in self._stats.items():
-                                stats[k][i, j] = v(y)
-                    except KeyError:
-                        pass
+            for j, rt in enumerate(self.runtimes):
+                trace = self.get(file=file, runtime=rt)
+                y = trace.arrays(keys=["cpu_time"])['cpu_time']
+                if y:
+                    for k, v in self._stats.items():
+                        stats[k][i, j] = v(y)
         if save:
             np.savez(save, **stats)
         return stats
-
-    def _iter_grid(self, axs, func):
-        for file, row in zip(self.files, axs):
-            trace = self.get(file)
-            for rt, ax in zip(self.runtimes, row):
-                try:
-                    func(ax, trace, rt)
-                except Exception as e:
-                    print("Error at ({}, {}): {}".format(file, rt, e))
-            row[0].set_ylabel(file.split("/")[-1])
 
     def plot_grid(
             self, keys=["cpu_time"], multiplier=1 / 10**6, limit_mad=5.,
@@ -159,17 +124,13 @@ class Session:
         xaxis : str
             X-axis data. Can be 'index' or 'time'.
         """
-        fig, axs = plt.subplots(
-            len(self.files), len(self.runtimes),
-            figsize=(2.25 * len(self.runtimes), 2 * len(self.files)))
 
-        def _inner(ax, trace, rt):
+        def _inner(ax, trace):
             if xaxis == 'index':
-                df = trace.filter(runtime=rt, keys=keys).reset_index()
+                df = trace.dataframe(keys=keys)
                 x = np.arange(len(df))
             else:
-                df = trace.filter(
-                    runtime=rt, keys=keys + ["start_time"]).reset_index()
+                df = trace.dataframe(keys=keys + ["start_time"])
                 x = (df["start_time"][1:-1] - df["start_time"][0]) / 10**9
 
             yy = np.array([df[k][1:-1] * multiplier for k in keys])
@@ -195,7 +156,16 @@ class Session:
                     else:
                         ax.hist(y, bins=50)
 
-        self._iter_grid(axs, _inner)
+        fig, axs = plt.subplots(
+            len(self.files), len(self.runtimes),
+            figsize=(2.25 * len(self.runtimes), 2 * len(self.files)))
+
+        for row, file in zip(axs, self.files):
+            for ax, rt in zip(row, self.runtimes):
+                trace = self.get(file=file, runtime=rt)
+                if trace:
+                    _inner(ax, trace)
+            row[0].set_ylabel(file.split('/')[-1])
 
         for ax, rt in zip(axs[-1], self.runtimes):
             ax.set_xlabel(rt)
