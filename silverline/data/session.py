@@ -88,7 +88,7 @@ class Session:
             for j, rt in enumerate(self.runtimes):
                 trace = self.get(file=file, runtime=rt)
                 y = trace.arrays(keys=["cpu_time"])['cpu_time']
-                if y:
+                if y is not None:
                     for k, v in self._stats.items():
                         stats[k][i, j] = v(y)
         if save:
