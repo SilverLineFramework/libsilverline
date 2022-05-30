@@ -1,4 +1,4 @@
-"""Stop all runtimes by sending a DELETE_RUNTIME request."""
+"""Stop runtimes by sending a DELETE_RUNTIME request."""
 
 from .client import Client
 from .parse import ArgumentParser
@@ -9,8 +9,9 @@ def _parse():
         description="Send stop signal to specified runtimes, or all runtimes "
         "by default.")
     p.add_argument(
-        "--runtime", nargs="+",
-        help="Runtimes to stop; if empty, stops all runtimes.", default=[])
+        "--runtime", nargs="+", default=[],
+        help="Runtimes to stop; if empty, stops all runtimes. Runtimes can be "
+        "specified by name, UUID, or last 4 characters of UUID.")
     p.add_to_parser(
         "client", Client, group="SilverLine Client", exclude=["connect"])
     return p

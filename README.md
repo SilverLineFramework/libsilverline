@@ -33,6 +33,11 @@ python3 run.py --config config.json --runtime test --path wasm/tests/helloworld.
 python3 stop_runtimes.py --config config.json --runtime test_1 test_2
 ```
 
+- ```stop_modules.py```: Issue exit request to specified modules.
+```sh
+python3 stop_modules.py --config config.json --modules module_1
+```
+
 - ```echo.py```: Send echo instruction to orchestrator, and wait for response; useful for checking if the orchestrator MQTT message queue has cleared.
 ```sh
 python3 echo.py --config config.json --timeout 10

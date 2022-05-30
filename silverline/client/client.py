@@ -147,10 +147,14 @@ class Client(mqtt.Client):
         self._create_module(payload, target)
         return module_uuid
 
-    def delete_module(self, runtime):
+    def delete_module(self, module):
         """Delete module."""
         self.publish("realm/proc/control", json.dumps({
-            "uuid": str(uuid.uuid4()), "data": {"uuid": runtime}}))
+            "uuid": str(uuid.uuid4()),
+            "type": "arts_req",
+            "action": "delete",
+            "data": {"uuid": module}
+        }))
 
     def create_module(
             self, runtime, name="module", path="wasm/tests/helloworld.wasm",
@@ -201,6 +205,24 @@ class Client(mqtt.Client):
             for rt in runtimes
         }
 
+    def _infer(self, mode, terms):
+        objs = self._get_objs(mode, full=False, by_name=False)
+        objs_uuid = {k[-4:]: k for k in objs}
+        objs_name = {v: k for k, v in objs.items()}
+
+        def _lookup(obj):
+            if obj in objs:
+                return obj
+            elif obj in objs_uuid:
+                return objs_uuid[obj]
+            elif obj in objs_name:
+                return objs_name[obj]
+            else:
+                raise ValueError(
+                    "{} not found: {}".format(mode.capitalize(), obj))
+
+        return [_lookup(t) for t in terms]
+
     def infer_runtimes(self, runtimes):
         """Infer runtime UUIDs.
 
@@ -209,19 +231,11 @@ class Client(mqtt.Client):
           - last 4 characters of string-encoded UUID
           - full UUID.
         """
-        rts = self.get_runtimes()
-        rt_uuid = {k[-4:]: k for k in rts}
-        rt_name = {v: k for k, v in rts.items()}
+        return self._infer("runtimes", runtimes)
 
-        def _lookup(rt):
-            if rt in rt_name:
-                return rt_name[rt]
-            elif rt in rt_uuid:
-                return rt_uuid[rt]
-            else:
-                raise ValueError("Runtime not found: {}".format(rt))
-
-        return [_lookup(rt) for rt in runtimes]
+    def infer_modules(self, modules):
+        """Infer module UUIDs."""
+        return self._infer("modules", modules)
 
     def register_callback(self, topic, callback):
         """Subscribe to topic and register callback for that topic."""
@@ -245,19 +259,22 @@ class Client(mqtt.Client):
             print(r.text)
             raise e
 
-    def get_runtimes(self, full=False, by_name=False):
-        """Get runtimes from REST API."""
-        res = self._get_json("runtimes")
+    def _get_objs(self, address, full=False, by_name=False):
+        res = self._get_json(address)
         if full:
             return res
         elif by_name:
-            return {rt['name']: rt['uuid'] for rt in res}
+            return {x['name']: x['uuid'] for x in res}
         else:
-            return {rt['uuid']: rt['name'] for rt in res}
+            return {x['uuid']: x['name'] for x in res}
 
-    def get_modules(self, by_runtime=True):
+    def get_runtimes(self, full=False, by_name=False):
+        """Get runtimes from REST API."""
+        return self._get_objs("runtimes", full=full, by_name=by_name)
+
+    def get_modules(self, full=False, by_name=False):
         """Get modules from REST API."""
-        return self._get_json("modules")
+        return self._get_objs("modules", full=full, by_name=by_name)
 
     def reset(self, metadata):
         """Reset orchestrator."""
