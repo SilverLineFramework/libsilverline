@@ -97,7 +97,7 @@ class Session:
 
     def plot_grid(
             self, keys=["cpu_time"], multiplier=1 / 10**6, limit_mad=5.,
-            limit_rel=0.05, save="test.png", mode='trace', dpi=100,
+            limit_rel=0.1, save="test.png", mode='trace', dpi=100,
             hist_width=0.5, xaxis="index"):
         """Plot execution traces or histogram.
 
@@ -112,6 +112,7 @@ class Session:
             no limits are applied.
         limit_rel : float
             Minimum upper and lower margin, specified relative to the median.
+            If 0, no limits are applied.
         save : str
             If passed, save plot using plt.savefig and close immediately.
         mode : str
@@ -128,7 +129,6 @@ class Session:
         def _inner(ax, trace):
             if xaxis == 'index':
                 df = trace.dataframe(keys=keys)
-                x = np.arange(len(df))
             else:
                 df = trace.dataframe(keys=keys + ["start_time"])
                 x = (df["start_time"][1:-1] - df["start_time"][0]) / 10**9
@@ -142,7 +142,7 @@ class Session:
                 else:
                     ax.plot(x, yy.T, linewidth=0.6)
 
-                if limit_mad != 0:
+                if limit_mad > 0 or limit_rel > 0:
                     mads = np.median(np.abs(yy - mm.reshape(-1, 1)), axis=1)
                     radius = np.maximum(mads * limit_mad, limit_rel * mm)
                     ax.set_ylim(np.min(mm - radius), np.max(mm + radius))
