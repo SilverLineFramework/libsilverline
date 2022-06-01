@@ -140,8 +140,9 @@ class Session:
 
             if mode == 'trace':
                 if window > 1:
-                    yy = np.array(
-                        [np.convolve(y, np.ones(window) / window) for y in yy])
+                    yy = np.array([
+                        np.convolve(y, np.ones(window) / window, mode='valid')
+                        for y in yy])
 
                 if xaxis == 'index':
                     ax.plot(yy.T, linewidth=0.6)
