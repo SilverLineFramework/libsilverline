@@ -98,7 +98,7 @@ class Session:
     def plot_grid(
             self, keys=["cpu_time"], multiplier=1 / 10**6, limit_mad=5.,
             limit_rel=0.1, save="test.png", mode='trace', dpi=100,
-            hist_width=0.5, xaxis="index"):
+            hist_width=0.5, xaxis="index", window=1):
         """Plot execution traces or histogram.
 
         Parameters
@@ -124,6 +124,8 @@ class Session:
             Radius of histogram relative to mean. If 0., no limits are applied.
         xaxis : str
             X-axis data. Can be 'index' or 'time'.
+        window : int
+            Sliding window smoothing. If 1, no smoothing is performed.
         """
 
         def _inner(ax, trace):
@@ -137,6 +139,9 @@ class Session:
             mm = np.median(yy, axis=1)
 
             if mode == 'trace':
+                if window > 1:
+                    yy = np.convolve(yy, np.ones(window) / window)
+
                 if xaxis == 'index':
                     ax.plot(yy.T, linewidth=0.6)
                 else:
