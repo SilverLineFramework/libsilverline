@@ -27,7 +27,10 @@ class Session:
         "std": lambda y: np.sqrt(np.var(y)),
         "n": len,
         "min": np.min,
-        "max": np.max
+        "max": np.max,
+        "p90": lambda y: np.percentile(y, 90),
+        "p95": lambda y: np.percentile(y, 95),
+        "p99": lambda y: np.percentile(y, 99)
     }
 
     def __init__(self, dir="data"):
@@ -87,10 +90,18 @@ class Session:
         for i, file in enumerate(tqdm(self.files)):
             for j, rt in enumerate(self.runtimes):
                 trace = self.get(file=file, runtime=rt)
-                y = trace.arrays(keys=["cpu_time"])['cpu_time']
+                y = trace.arrays(keys=["cpu_time"])['cpu_time'][2:-1]
                 if y is not None:
                     for k, v in self._stats.items():
-                        stats[k][i, j] = v(y)
+                        try:
+                            res = v(y)
+                        except Exception as e:
+                            res = -1
+                            print("Exception at ({}, {}): {}".format(
+                                file, rt, e))
+                        if np.isnan(res):
+                            res = -1
+                        stats[k][i, j] = res
         if save:
             np.savez(save, **stats)
         return stats
