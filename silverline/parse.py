@@ -43,8 +43,13 @@ class ArgumentParser(argparse.ArgumentParser):
 
     def add_argument(self, *args, **kwargs):
         """Add argument to parser."""
-        if args != ('-h', '--help'):
-            self._arg_names += [a.lstrip('--') for a in args]
+        for a in args:
+            # Exclude -h and --help; only include full (--arg) flags
+            if a not in {'-h', '--help'} and a.startswith('--'):
+                self._arg_names.append(a.lstrip('--'))
+            # Also include positional args
+            elif not a.startswith('-'):
+                self._arg_names.append(a)
         return super().add_argument(*args, **kwargs)
 
     def add_to_parser(
