@@ -1,8 +1,6 @@
-tqdm
-docstring-parser
 numpy
-pandas
-matplotlib
+printtools
+docstring-parser
 requests
-fabric
 paho-mqtt
+tqdm
