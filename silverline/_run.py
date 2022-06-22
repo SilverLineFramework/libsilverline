@@ -1,6 +1,7 @@
 """Run and test runtime."""
 
-from .client import Client, run_profilers
+from .client import Client
+from .profilers import run_profilers
 from .parse import ArgumentParser
 
 
