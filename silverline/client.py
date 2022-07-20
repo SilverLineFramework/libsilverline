@@ -218,10 +218,12 @@ class Client(mqtt.Client):
             elif obj in objs_name:
                 return objs_name[obj]
             else:
-                raise ValueError(
-                    "{} not found: {}".format(mode.capitalize(), obj))
+                print("[Warning] {} not found: {}".format(
+                    mode.capitalize(), obj))
+                return None
 
-        return [_lookup(t) for t in terms]
+        res = [_lookup(t) for t in terms]
+        return [x for x in res if x is not None]
 
     def infer_runtimes(self, runtimes):
         """Infer runtime UUIDs.
