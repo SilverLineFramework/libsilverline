@@ -61,7 +61,7 @@ class Client(mqtt.Client):
 
     def _error_handler(self, payload):
         """Error logger."""
-        msg = json.dumps(payload)
+        msg = json.loads(payload)
         print("[Error]", msg.get("data"))
 
     def on_connect(self, mqttc, obj, flags, rc):
