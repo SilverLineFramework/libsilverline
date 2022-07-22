@@ -59,14 +59,12 @@ class Client(mqtt.Client):
 
     def on_connect(self, mqttc, obj, flags, rc):
         """On connect callback."""
-        print("[Setup] Connected: rc={} ({})".format(
-            rc, mqtt.connack_string(rc)))
         if self.semaphore is not None:
             self.semaphore.release()
 
     def on_disconnect(self, client, userdata, rc):
         """Disconnection callback."""
-        print("[Error] Disconnected: rc={} ({})".format(
+        print("Disconnected: rc={} ({})".format(
             rc, mqtt.connack_string(rc)))
 
     def delete_runtime(self, target, name="test"):
@@ -249,32 +247,3 @@ class Client(mqtt.Client):
     def get_modules(self):
         """Get modules from REST API."""
         return self._get_json("modules")['modules']
-
-    def reset(self, metadata):
-        """Reset orchestrator."""
-        self.publish(
-            "realm/proc/special",
-            json.dumps({"action": "reset", "data": metadata}))
-
-    def echo(self, timeout=10.):
-        """Ask orchestrator to echo. Serves as a simple queue wait.
-
-        Parameters
-        ----------
-        timeout : float
-            Number of seconds to wait for a response.
-        """
-        waiter = Semaphore(value=0)
-        echo_id = str(uuid.uuid4())
-
-        def _waiter(args):
-            try:
-                if json.loads(args).get('data') == echo_id:
-                    waiter.release()
-            except json.JSONDecodeError:
-                pass
-
-        self.register_callback("realm/proc/echo", _waiter)
-        self.publish("realm/proc/special", json.dumps(
-            {"action": "echo", "data": echo_id}))
-        waiter.acquire(timeout=timeout)
