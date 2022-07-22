@@ -26,9 +26,9 @@ def _main(args):
             client.delete_runtime(rt)
     else:
         runtimes = client.get_runtimes()
-        print("Stopping all runtimes: {}".format(runtimes))
-        for rt_id, rt in runtimes.items():
-            print("Stopping runtime {} [{}]".format(rt, rt_id))
-            client.delete_runtime(rt_id, name=rt)
+        print("Stopping all runtimes:")
+        for rt in runtimes:
+            print("Stopping runtime {} [{}]".format(rt["name"], rt["uuid"]))
+            client.delete_runtime(rt["uuid"])
 
     client.loop_stop()

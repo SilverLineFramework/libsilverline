@@ -38,9 +38,9 @@ class Client(mqtt.Client):
             http_port=8000, connect=True):
 
         self.callbacks = {}
-        self.arts_api = "http://{}:{}/arts-api/v1".format(http, http_port)
+        self.arts_api = "http://{}:{}/api".format(http, http_port)
 
-        super().__init__("Benchmarking")
+        super().__init__("LibSilverLine Client")
 
         if connect:
             self.semaphore = Semaphore()
@@ -53,16 +53,9 @@ class Client(mqtt.Client):
                 self.tls_set(cert_reqs=ssl.CERT_NONE)
             self.connect(mqtt, mqtt_port, 60)
 
-            self.register_callback("realm/proc/err", self._error_handler)
-
             # Waiting for on_connect to release
             self.loop_start()
             self.semaphore.acquire()
-
-    def _error_handler(self, payload):
-        """Error logger."""
-        msg = json.loads(payload)
-        print("[Error]", msg.get("data"))
 
     def on_connect(self, mqttc, obj, flags, rc):
         """On connect callback."""
@@ -98,7 +91,7 @@ class Client(mqtt.Client):
             "type": "arts_req",
             "data": {
                 "type": "module",
-                "parent": {"uuid": target},
+                "parent": target,
                 **data
             }
         })
@@ -205,25 +198,13 @@ class Client(mqtt.Client):
             for rt in runtimes
         }
 
-    def _infer(self, mode, terms):
-        objs = self._get_objs(mode, full=False, by_name=False)
-        objs_uuid = {k[-4:]: k for k in objs}
-        objs_name = {v: k for k, v in objs.items()}
-
-        def _lookup(obj):
-            if obj in objs:
-                return obj
-            elif obj in objs_uuid:
-                return objs_uuid[obj]
-            elif obj in objs_name:
-                return objs_name[obj]
-            else:
-                print("[Warning] {} not found: {}".format(
-                    mode.capitalize(), obj))
-                return None
-
-        res = [_lookup(t) for t in terms]
-        return [x for x in res if x is not None]
+    def _infer(self, mode, query):
+        res = []
+        for q in query:
+            resp = self._get_json("{}/{}".format(mode, q))
+            if resp:
+                res.append(resp['uuid'])
+        return res
 
     def infer_runtimes(self, runtimes):
         """Infer runtime UUIDs.
@@ -261,22 +242,13 @@ class Client(mqtt.Client):
             print(r.text)
             raise e
 
-    def _get_objs(self, address, full=False, by_name=False):
-        res = self._get_json(address)
-        if full:
-            return res
-        elif by_name:
-            return {x['name']: x['uuid'] for x in res}
-        else:
-            return {x['uuid']: x['name'] for x in res}
-
-    def get_runtimes(self, full=False, by_name=False):
+    def get_runtimes(self):
         """Get runtimes from REST API."""
-        return self._get_objs("runtimes", full=full, by_name=by_name)
+        return self._get_json("runtimes")['runtimes']
 
-    def get_modules(self, full=False, by_name=False):
+    def get_modules(self):
         """Get modules from REST API."""
-        return self._get_objs("modules", full=full, by_name=by_name)
+        return self._get_json("modules")['modules']
 
     def reset(self, metadata):
         """Reset orchestrator."""

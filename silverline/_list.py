@@ -51,7 +51,7 @@ def _full(runtimes):
 
 def _main(args):
     client = Client(connect=False, **args["client"])
-    runtimes = client.get_runtimes(full=True)
+    runtimes = client.get_runtimes()
 
     if args["style"] == "short":
         _short(runtimes)
