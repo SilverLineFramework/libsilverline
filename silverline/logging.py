@@ -1,6 +1,7 @@
 """Standardized loggging configuration."""
 
 import logging
+from datetime import datetime
 
 
 def configure_log(log="", verbose=2):
@@ -17,7 +18,7 @@ def configure_log(log="", verbose=2):
     Parameters
     ----------
     log : str
-        File to save log to.
+        File to save log to. Will save to `{log}-{date}.log`.
     verbose : int or str
         Logging level to use (0-5; 5 is most verbose).
     """
@@ -27,7 +28,9 @@ def configure_log(log="", verbose=2):
 
     handlers = [logging.StreamHandler()]
     if log:
-        handlers.append(logging.FileHandler(log))
+        handlers.append(
+            logging.FileHandler("{}{}.log".format(
+                log, datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))))
 
     logging.basicConfig(
         level=level,

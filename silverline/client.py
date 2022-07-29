@@ -58,13 +58,16 @@ class Client(mqtt.Client, OrchestratorMixin, ProfileMixin):
             self.semaphore = Semaphore()
             self.semaphore.acquire()
 
-            with open(pwd, 'r') as f:
-                passwd = f.read().rstrip('\n')
-
             self.log.info("Connecting with MQTT client: {}".format(cid))
-            self.log.info("Username: {}".format(mqtt_username))
-            self.log.info("Password: {}".format(passwd))
             self.log.info("SSL: {}".format(use_ssl))
+            self.log.info("Username: {}".format(mqtt_username))
+            try:
+                with open(pwd, 'r') as f:
+                    passwd = f.read().rstrip('\n')
+                self.log.info("Password: {}".format(passwd))
+            except FileNotFoundError:
+                passwd = ""
+                self.log.warn("No password supplied; using an empty password.")
 
             self.username_pw_set(mqtt_username, passwd)
             if use_ssl:
