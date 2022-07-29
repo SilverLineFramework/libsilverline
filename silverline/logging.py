@@ -3,7 +3,7 @@
 import logging
 
 
-def configure_log(log=None, verbose=2):
+def configure_log(log="", verbose=2):
     """Configure SilverLine logging.
 
     Uses the same convention as the linux runtime:
@@ -25,8 +25,12 @@ def configure_log(log=None, verbose=2):
         0: 40, 1: 30, 2: 20, 3: 10, 4: 5, 5: 0
     }.get(verbose, 0)
 
+    handlers = [logging.StreamHandler()]
+    if log:
+        handlers.append(logging.FileHandler(log))
+
     logging.basicConfig(
-        filename=log,
         level=level,
         format="[%(asctime)s] [%(module)s:%(levelname)s] %(message)s",
-        datefmt="%H:%M:%S")
+        datefmt="%H:%M:%S",
+        handlers=handlers)
