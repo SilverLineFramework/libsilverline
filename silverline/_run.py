@@ -30,7 +30,10 @@ def _main(args):
     client = Client(**args["client"])
     modules = {}
     for p in args["path"]:
-        modules.update(client.create_modules(
-            client.infer_runtimes(args["runtime"]), path=p, **args["module"]))
+        runtimes = client.infer_runtimes(args["runtime"])
+        print("Creating {} / {} modules:\n{} --> {}".format(
+            len(runtimes), len(args["runtime"]), args["runtime"], runtimes))
+        modules.update(
+            client.create_modules(runtimes, path=p, **args["module"]))
     run_profilers(client, modules, **args["profile"])
     client.loop_stop()
