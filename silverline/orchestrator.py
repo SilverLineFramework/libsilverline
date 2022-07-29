@@ -20,7 +20,7 @@ class OrchestratorMixin:
                 "name": name
             }
         })
-        self.publish("realm/proc/control/{}".format(target), payload)
+        self.publish("{}/proc/control/{}".format(self.realm, target), payload)
 
     def _create_module(self, data, target):
         """Create Module helper function."""
@@ -34,7 +34,7 @@ class OrchestratorMixin:
                 **data
             }
         })
-        self.publish("realm/proc/control", payload)
+        self.publish("{}/proc/control".format(self.realm), payload)
 
     def create_module_wasm(
             self, target, name="module", path="wasm/apps/helloworld.wasm",
@@ -81,7 +81,7 @@ class OrchestratorMixin:
 
     def delete_module(self, module):
         """Delete module."""
-        self.publish("realm/proc/control", json.dumps({
+        self.publish("{}/proc/control".format(self.realm), json.dumps({
             "uuid": str(uuid.uuid4()),
             "type": "arts_req",
             "action": "delete",

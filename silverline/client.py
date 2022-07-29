@@ -7,9 +7,10 @@ from threading import Semaphore
 import paho.mqtt.client as mqtt
 
 from .orchestrator import OrchestratorMixin
+from .profile import ProfileMixin
 
 
-class Client(mqtt.Client, OrchestratorMixin):
+class Client(mqtt.Client, OrchestratorMixin, ProfileMixin):
     """SilverLine Interface.
 
     Parameters
@@ -20,6 +21,8 @@ class Client(mqtt.Client, OrchestratorMixin):
         MQTT host server address.
     mqtt_port : int
         MQTT host server port.
+    realm : str
+        Realm name.
     http : str
         Orchestrator HTTP server address.
     http_port : int
@@ -36,11 +39,12 @@ class Client(mqtt.Client, OrchestratorMixin):
 
     def __init__(
             self, name="libsilverline", mqtt="localhost", mqtt_port=1883,
-            pwd="mqtt_pwd.txt", mqtt_username="cli", use_ssl=False,
-            http="localhost", http_port=8000, connect=True):
+            realm="realm", pwd="mqtt_pwd.txt", mqtt_username="cli",
+            use_ssl=False, http="localhost", http_port=8000, connect=True):
 
         self.callbacks = {}
         self.arts_api = "http://{}:{}/api".format(http, http_port)
+        self.realm = realm
 
         # Append a UUID here since client_id must be unique.
         # If this is not added, MQTT will disconnect with rc=7
