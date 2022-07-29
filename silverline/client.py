@@ -62,8 +62,8 @@ class Client(mqtt.Client, OrchestratorMixin):
     def on_connect(self, mqttc, obj, flags, rc):
         """On connect callback: register handlers, release main thread."""
         for h in self.handlers:
-            def _handle(msg):
-                return h.handle(h.decode(msg))
+            def _handle(client, userdata, msg):
+                return h.handle(h.decode(client, userdata, msg))
             self.subscribe(h.topic)
             self.message_callback_add(h.topic, _handle)
 
