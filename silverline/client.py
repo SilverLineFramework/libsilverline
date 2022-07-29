@@ -2,6 +2,7 @@
 
 import ssl
 import uuid
+import logging
 
 from threading import Semaphore
 import paho.mqtt.client as mqtt
@@ -45,11 +46,13 @@ class Client(mqtt.Client, OrchestratorMixin, ProfileMixin):
         self.callbacks = {}
         self.arts_api = "http://{}:{}/api".format(http, http_port)
         self.realm = realm
+        self.log = logging.getLogger('client')
 
         # Append a UUID here since client_id must be unique.
         # If this is not added, MQTT will disconnect with rc=7
         # (Connection Refused: unknown reason.)
-        super().__init__(client_id="{}:{}".format(cid, uuid.uuid4()))
+        cid = "{}:{}".format(cid, uuid.uuid4())
+        super().__init__(client_id=cid)
 
         if connect:
             self.semaphore = Semaphore()
@@ -57,6 +60,12 @@ class Client(mqtt.Client, OrchestratorMixin, ProfileMixin):
 
             with open(pwd, 'r') as f:
                 passwd = f.read().rstrip('\n')
+
+            self.log.info("Connecting with MQTT client: {}".format(cid))
+            self.log.info("Username: {}".format(mqtt_username))
+            self.log.info("Password: {}".format(passwd))
+            self.log.info("SSL: {}".format(use_ssl))
+
             self.username_pw_set(mqtt_username, passwd)
             if use_ssl:
                 self.tls_set(cert_reqs=ssl.CERT_NONE)
@@ -70,10 +79,11 @@ class Client(mqtt.Client, OrchestratorMixin, ProfileMixin):
         """On connect callback: register handlers, release main thread."""
         if self.semaphore is not None:
             self.semaphore.release()
+        self.log.info("Connected to MQTT server.")
 
     def on_disconnect(self, client, userdata, rc):
         """Disconnection callback."""
-        print("Disconnected: rc={} ({})".format(
+        self.log.warn("Disconnected: rc={} ({})".format(
             rc, mqtt.connack_string(rc)))
 
     def register_callback(self, topic, callback):
@@ -87,15 +97,14 @@ class Client(mqtt.Client, OrchestratorMixin, ProfileMixin):
             try:
                 return handler.handle(handler.decode(client, userdata, msg))
             except Exception as e:
-                print("Error: {}{}".format(
-                    str(e), "..." if len(msg.payload) > 64 else ""))
-                print(msg.topic, msg.payload[:64])
+                self.log.error(
+                    "{} @ {}: {}".format(str(e), msg.topic, msg.payload[:64]))
                 raise(e)
         self.subscribe(handler.topic)
         self.message_callback_add(handler.topic, _handle)
 
     def on_message(self, client, userdata, message):
         """Subscribed message handler."""
-        print(
-            "[Warning] message arrived topic without handler (should be "
+        self.log.warn(
+            "Message arrived topic without handler (should be "
             "impossible!): {}".format(message.topic))
