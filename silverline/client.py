@@ -64,6 +64,7 @@ class Client(mqtt.Client, OrchestratorMixin):
         for h in self.handlers:
             def _handle(msg):
                 return h.handle(h.decode(msg))
+            self.subscribe(h.topic)
             self.message_callback_add(h.topic, _handle)
 
         if self.semaphore is not None:
@@ -77,7 +78,7 @@ class Client(mqtt.Client, OrchestratorMixin):
     def register_callback(self, topic, callback):
         """Subscribe to topic and register callback for that topic."""
         self.subscribe(topic)
-        self.callbacks[topic] = callback
+        self.message_callback_add(topic, callback)
 
     def on_message(self, client, userdata, message):
         """Subscribed message handler."""

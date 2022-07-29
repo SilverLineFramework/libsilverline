@@ -108,7 +108,7 @@ class TimedProfiler:
 
         self.done = False
 
-    def callback(self, _):
+    def callback(self, client, userdata, msg):
         """Callback for triggering the next period."""
         if self.done:
             self.client.publish(self.topic, b"exit")
@@ -151,7 +151,7 @@ class PassiveProfiler:
         self.client.register_callback(
             "benchmark/out/{}".format(module), self.callback)
 
-    def callback(self, _):
+    def callback(self, client, userdata, msg):
         """Callback to ensure the last iteration finishes."""
         self.semaphore.release()
 
