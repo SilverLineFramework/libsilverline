@@ -175,3 +175,11 @@ class OrchestratorMixin:
     def get_modules(self):
         """Get modules from REST API."""
         return self._get_json("modules")['modules']
+
+    def get_runtime(self, rt):
+        """Get runtime full metadata from REST API."""
+        return self._get_json("runtimes/{}".format(rt))
+
+    def get_module(self, mod):
+        """Get module full metadata from REST API."""
+        return self._get_json("modules/{}".format(mod))

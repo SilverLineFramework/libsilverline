@@ -29,18 +29,15 @@ class Client(mqtt.Client, OrchestratorMixin):
         Use SSL (mqtt-secure) if True.
     connect : bool
         Connect to MQTT on initialization if True.
-    handlers : BaseHandler[]
-        List of message handlers to register callbacks for.
     """
 
     def __init__(
             self, mqtt="localhost", mqtt_port=1883, pwd="mqtt_pwd.txt",
             mqtt_username="cli", use_ssl=False, http="localhost",
-            http_port=8000, connect=True, handlers=[]):
+            http_port=8000, connect=True):
 
         self.callbacks = {}
         self.arts_api = "http://{}:{}/api".format(http, http_port)
-        self.handlers = handlers
 
         super().__init__("LibSilverLine Client")
 
@@ -61,12 +58,6 @@ class Client(mqtt.Client, OrchestratorMixin):
 
     def on_connect(self, mqttc, obj, flags, rc):
         """On connect callback: register handlers, release main thread."""
-        for h in self.handlers:
-            def _handle(client, userdata, msg):
-                return h.handle(h.decode(client, userdata, msg))
-            self.subscribe(h.topic)
-            self.message_callback_add(h.topic, _handle)
-
         if self.semaphore is not None:
             self.semaphore.release()
 
@@ -79,6 +70,20 @@ class Client(mqtt.Client, OrchestratorMixin):
         """Subscribe to topic and register callback for that topic."""
         self.subscribe(topic)
         self.message_callback_add(topic, callback)
+
+    def register_handler(self, handler):
+        """Subscribe and register callback for handler."""
+        def _handle(client, userdata, msg, handler=handler):
+            print(msg.topic)
+            try:
+                return handler.handle(handler.decode(client, userdata, msg))
+            except Exception as e:
+                print("Error: {}{}".format(
+                    str(e), "..." if len(msg.payload) > 64 else ""))
+                print(msg.topic, msg.payload[:64])
+                raise(e)
+        self.subscribe(handler.topic)
+        self.message_callback_add(handler.topic, _handle)
 
     def on_message(self, client, userdata, message):
         """Subscribed message handler."""
