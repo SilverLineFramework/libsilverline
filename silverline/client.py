@@ -15,8 +15,8 @@ class Client(mqtt.Client, OrchestratorMixin, ProfileMixin):
 
     Parameters
     ----------
-    name : str
-        MQTT client name.
+    cid : str
+        MQTT client ID.
     mqtt : str
         MQTT host server address.
     mqtt_port : int
@@ -38,7 +38,7 @@ class Client(mqtt.Client, OrchestratorMixin, ProfileMixin):
     """
 
     def __init__(
-            self, name="libsilverline", mqtt="localhost", mqtt_port=1883,
+            self, cid="libsilverline", mqtt="localhost", mqtt_port=1883,
             realm="realm", pwd="mqtt_pwd.txt", mqtt_username="cli",
             use_ssl=False, http="localhost", http_port=8000, connect=True):
 
@@ -49,7 +49,7 @@ class Client(mqtt.Client, OrchestratorMixin, ProfileMixin):
         # Append a UUID here since client_id must be unique.
         # If this is not added, MQTT will disconnect with rc=7
         # (Connection Refused: unknown reason.)
-        super().__init__(client_id="{}:{}".format(name, uuid.uuid4()))
+        super().__init__(client_id="{}:{}".format(cid, uuid.uuid4()))
 
         if connect:
             self.semaphore = Semaphore()
