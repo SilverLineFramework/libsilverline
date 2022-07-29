@@ -1,6 +1,7 @@
 """SilverLine system interface."""
 
 import ssl
+import uuid
 
 from threading import Semaphore
 import paho.mqtt.client as mqtt
@@ -13,6 +14,8 @@ class Client(mqtt.Client, OrchestratorMixin):
 
     Parameters
     ----------
+    name : str
+        MQTT client name.
     mqtt : str
         MQTT host server address.
     mqtt_port : int
@@ -32,14 +35,17 @@ class Client(mqtt.Client, OrchestratorMixin):
     """
 
     def __init__(
-            self, mqtt="localhost", mqtt_port=1883, pwd="mqtt_pwd.txt",
-            mqtt_username="cli", use_ssl=False, http="localhost",
-            http_port=8000, connect=True):
+            self, name="libsilverline", mqtt="localhost", mqtt_port=1883,
+            pwd="mqtt_pwd.txt", mqtt_username="cli", use_ssl=False,
+            http="localhost", http_port=8000, connect=True):
 
         self.callbacks = {}
         self.arts_api = "http://{}:{}/api".format(http, http_port)
 
-        super().__init__("LibSilverLine Client")
+        # Append a UUID here since client_id must be unique.
+        # If this is not added, MQTT will disconnect with rc=7
+        # (Connection Refused: unknown reason.)
+        super().__init__(client_id="{}:{}".format(name, uuid.uuid4()))
 
         if connect:
             self.semaphore = Semaphore()
@@ -74,7 +80,6 @@ class Client(mqtt.Client, OrchestratorMixin):
     def register_handler(self, handler):
         """Subscribe and register callback for handler."""
         def _handle(client, userdata, msg, handler=handler):
-            print(msg.topic)
             try:
                 return handler.handle(handler.decode(client, userdata, msg))
             except Exception as e:
