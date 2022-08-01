@@ -103,8 +103,7 @@ class Client(mqtt.Client, OrchestratorMixin, ProfileMixin):
                 self.log.error(
                     "{} @ {}: {}".format(str(e), msg.topic, msg.payload[:64]))
                 raise(e)
-        self.subscribe(handler.topic)
-        self.message_callback_add(handler.topic, _handle)
+        self.register_callback(handler.topic, _handle)
 
     def on_message(self, client, userdata, message):
         """Subscribed message handler."""
