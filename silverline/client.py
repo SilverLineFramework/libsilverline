@@ -64,7 +64,7 @@ class Client(mqtt.Client, OrchestratorMixin, ProfileMixin):
             try:
                 with open(pwd, 'r') as f:
                     passwd = f.read().rstrip('\n')
-                self.log.info("Password: {}".format(passwd))
+                self.log.info("Password file: {}".format(pwd))
             except FileNotFoundError:
                 passwd = ""
                 self.log.warn("No password supplied; using an empty password.")
