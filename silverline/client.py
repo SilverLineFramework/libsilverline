@@ -46,7 +46,7 @@ class Client(mqtt.Client, OrchestratorMixin, ProfileMixin):
         self.callbacks = {}
         self.arts_api = "http://{}:{}/api".format(http, http_port)
         self.realm = realm
-        self.mqtt_control = "/".join(realm, "proc", "control")
+        self.mqtt_control = "/".join([realm, "proc", "control"])
 
         self.log = logging.getLogger('client')
 

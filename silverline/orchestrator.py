@@ -20,7 +20,7 @@ class OrchestratorMixin:
                 "name": name
             }
         })
-        self.publish("/".join(self.mqtt_control, target), payload, qos=2)
+        self.publish("/".join([self.mqtt_control, target]), payload, qos=2)
 
     def _create_module(self, data, target):
         """Create Module helper function."""
