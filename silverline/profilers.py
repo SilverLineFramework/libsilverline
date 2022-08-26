@@ -60,11 +60,11 @@ class ActiveProfiler:
         self.idx += 1
 
         if self.idx >= self.n:
-            self.client.publish(self.topic, b"exit")
+            self.client.publish(self.topic, b"exit", qos=2)
             self.semaphore.release()
         else:
             time.sleep(self.delay)
-            self.client.publish(self.topic, self.data.generate())
+            self.client.publish(self.topic, self.data.generate(), qos=9)
 
     @staticmethod
     def run(profilers):
@@ -111,11 +111,11 @@ class TimedProfiler:
     def callback(self, client, userdata, msg):
         """Callback for triggering the next period."""
         if self.done:
-            self.client.publish(self.topic, b"exit")
+            self.client.publish(self.topic, b"exit", qos=2)
             self.semaphore.release()
         else:
             time.sleep(self.delay)
-            self.client.publish(self.topic, self.data.generate())
+            self.client.publish(self.topic, self.data.generate(), qos=1)
 
     @staticmethod
     def run(profilers, duration=60):
@@ -162,7 +162,7 @@ class PassiveProfiler:
             time.sleep(duration / 100)
 
         for p in profilers:
-            p.client.publish(p.topic, b"exit")
+            p.client.publish(p.topic, b"exit", qos=2)
         for p in profilers:
             p.semaphore.acquire(timeout=10)
 

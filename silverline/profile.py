@@ -13,4 +13,4 @@ class ProfileMixin:
             "{}/proc/profile/control".format(self.realm), json.dumps({
                 "object_id": str(uuid.uuid4()),
                 "action": "reset",
-                "data": metadata}))
+                "data": metadata}), qos=2)
