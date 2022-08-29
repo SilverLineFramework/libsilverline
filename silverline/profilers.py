@@ -30,7 +30,8 @@ class ActiveProfiler:
     """
 
     def __init__(
-            self, client, module, data, n=100, delay=0.1, pbar=-1, desc='rt'):
+            self, client, module, data=None,
+            n=100, delay=0.1, pbar=-1, desc='rt'):
 
         self.data = data
         self.client = client
@@ -167,6 +168,31 @@ class PassiveProfiler:
             p.semaphore.acquire(timeout=10)
 
 
+class PassiveStrictProfiler:
+    """Passive time-limited profiler with forced (non-cooperative) cutoff.
+
+    Parameters
+    ----------
+    client : Client
+        SilverLine mqtt client interface.
+    module : str
+        Module UUID to interact with.
+    """
+
+    def __init__(self, client, module):
+        self.client = client
+        self.module = module
+
+    @staticmethod
+    def run(profilers, duration=60):
+        """Force-terminate modules after timeoiut."""
+        for _ in tqdm(range(100)):
+            time.sleep(duration / 100)
+
+        for p in profilers:
+            p.client.delete_module(p.module)
+
+
 def run_profilers(
         client, modules,
         type="run", mean_size=1000., alpha=1., n=100, delay=0.1, duration=60.):
@@ -201,12 +227,13 @@ def run_profilers(
     if type == "active":
         profilers = [
             ActiveProfiler(
-                client, mod, _make_dp(), delay=delay, n=n, pbar=i, desc=rt)
+                client, mod, data=_make_dp(),
+                delay=delay, n=n, pbar=i, desc=rt)
             for i, ((rt, _), mod) in enumerate(modules.items())]
         ActiveProfiler.run(profilers)
     elif type == "timed":
         profilers = [
-            TimedProfiler(client, mod, _make_dp(), delay=delay)
+            TimedProfiler(client, mod, data=_make_dp(), delay=delay)
             for (_, mod) in modules.items()]
         TimedProfiler.run(profilers, duration=duration)
     elif type == "passive":
@@ -214,6 +241,11 @@ def run_profilers(
             PassiveProfiler(client, mod)
             for (_, mod) in modules.items()]
         PassiveProfiler.run(profilers, duration=duration)
+    elif type == "strict":
+        profilers = [
+            PassiveStrictProfiler(client, mod)
+            for (_, mod) in modules.items()]
+        PassiveStrictProfiler.run(profilers, duration=duration)
     elif type == "run":
         pass
     else:
