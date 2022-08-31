@@ -38,7 +38,8 @@ class OrchestratorMixin:
 
     def create_module_wasm(
             self, target, name="module", path="wasm/apps/helloworld.wasm",
-            argv=[], env=[], period=10000, utilization=0.0):
+            argv=[], env=[], period=10000, utilization=0.0,
+            fault_crash="ignore"):
         """Create WASM module."""
         module_uuid = str(uuid.uuid4())
         payload = {
@@ -48,6 +49,7 @@ class OrchestratorMixin:
             "filetype": "WA",
             "args": [path] + argv,
             "env": env,
+            "fault_crash": fault_crash,
         }
         if utilization > 0:
             payload["resources"] = {
@@ -59,7 +61,8 @@ class OrchestratorMixin:
 
     def create_module_py(
             self, target, name="module", aot=False, path="python/pinata.py",
-            argv=[], env=[], period=10000, utilization=0.0):
+            argv=[], env=[], period=10000, utilization=0.0,
+            fault_crash="ignore"):
         """Create python module."""
         python = "{t}/rustpython.{t}".format(t="aot" if aot else "wasm")
         module_uuid = str(uuid.uuid4())
@@ -69,7 +72,8 @@ class OrchestratorMixin:
             "filename": python,
             "filetype": "PY",
             "args": [python, path] + argv,
-            "env": env
+            "env": env,
+            "fault_crash": fault_crash
         }
         if utilization > 0:
             payload["resources"] = {
@@ -92,7 +96,7 @@ class OrchestratorMixin:
     def create_module(
             self, runtime, name="module", path="wasm/tests/helloworld.wasm",
             argv=[], env=[], filetype="WA", aot=False, period=10000000,
-            utilization=0.0):
+            utilization=0.0, fault_crash="ignore"):
         """Create module.
 
         Parameters
@@ -116,19 +120,23 @@ class OrchestratorMixin:
             Period for sched_deadline, in nanoseconds.
         utilization : float
             Utilization for sched_deadline. If 0.0, uses CFS.
+        fault_crash : str
+            Fault tolerance mode for module crashes; 'ignore' or 'restart'.
 
         Returns
         -------
         str
             ID of created module.
         """
+        kwargs = {
+            "name": name, "path": path, "argv": argv, "env": env,
+            "period": period, "utilization": utilization,
+            "fault_crash": fault_crash
+        }
         if filetype == "PY":
-            return self.create_module_py(
-                runtime, name=name, path=path, aot=aot, argv=argv, env=env)
+            return self.create_module_py(runtime, aot=aot, **kwargs)
         else:
-            return self.create_module_wasm(
-                runtime, name=name, path=path, argv=argv, env=env,
-                period=period, utilization=utilization)
+            return self.create_module_wasm(runtime, **kwargs)
 
     def create_modules(
             self, runtimes, path="wasm/apps/helloworld.wasm", **kwargs):
