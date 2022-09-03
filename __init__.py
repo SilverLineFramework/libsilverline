@@ -1,5 +1,5 @@
 """Passthrough for subrepositories."""
 
-from .silverline import *
+from .libsilverline import *
 
-__doc__ = silverline.__doc__
+__doc__ = libsilverline.__doc__

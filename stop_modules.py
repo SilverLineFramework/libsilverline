@@ -1,6 +1,6 @@
 """Stop modules by sending a DELETE_MODULE request."""
 
-from silverline import _stop_modules
+from libsilverline import _stop_modules
 
 
 if __name__ == '__main__':
