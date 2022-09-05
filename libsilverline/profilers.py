@@ -13,7 +13,7 @@ class ActiveProfiler:
 
     Parameters
     ----------
-    client : Client
+    client : libsilverline.Client
         SilverLine mqtt client interface.
     module : str
         Module UUID to interact with.
@@ -84,7 +84,7 @@ class TimedProfiler:
 
     Parameters
     ----------
-    client : Client
+    client : libsilverline.Client
         SilverLine mqtt client interface.
     module : str
         Module UUID to interact with.
@@ -135,7 +135,7 @@ class PassiveProfiler:
 
     Parameters
     ----------
-    client : Client
+    client : libsilverline.Client
         SilverLine mqtt client interface.
     module : str
         Module UUID to interact with.
@@ -173,7 +173,7 @@ class PassiveStrictProfiler:
 
     Parameters
     ----------
-    client : Client
+    client : libsilverline.Client
         SilverLine mqtt client interface.
     module : str
         Module UUID to interact with.
@@ -200,7 +200,7 @@ def run_profilers(
 
     Parameters
     ----------
-    client : Client
+    client : libsilverline.Client
         SilverLine client interface.
     modules : dict
         Dictionary containing module names (key) and IDs (value) to profile.

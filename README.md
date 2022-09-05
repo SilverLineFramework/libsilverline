@@ -8,8 +8,12 @@
     pip install -r requirements.txt
     ```
 3. Start module:
-    ```
+    ```sh
     python3 run.py --runtime test --path wasm/tests/helloworld.wasm
+    ```
+4. (Optional) Install as python module:
+    ```sh
+    pip install .
     ```
 
 ## Usage

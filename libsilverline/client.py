@@ -12,12 +12,17 @@ from .profile import ProfileMixin
 
 
 class Client(mqtt.Client, OrchestratorMixin, ProfileMixin):
-    """SilverLine Interface.
+    """SilverLine Interface Python Client.
+
+    This class provides access to Silverline Services REST and Pubsub APIs;
+    SilverLine services also use this class as a primary interface into
+    SilverLine.
 
     Parameters
     ----------
     cid : str
-        MQTT client ID.
+        MQTT client ID. A random UUID is appended to ensure that CID collisions
+        cannot occur.
     mqtt : str
         MQTT host server address.
     mqtt_port : int
