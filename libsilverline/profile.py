@@ -14,3 +14,11 @@ class ProfileMixin:
                 "object_id": str(uuid.uuid4()),
                 "action": "reset",
                 "data": metadata}), qos=2)
+
+    def save(self, metadata):
+        """Save profiler state."""
+        self.publish(
+            "{}/proc/profile/control".format(self.realm), json.dumps({
+                "object_id": str(uuid.uuid4()),
+                "action": "save",
+                "data": metadata}), qos=2)
