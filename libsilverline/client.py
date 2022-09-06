@@ -3,6 +3,7 @@
 import ssl
 import uuid
 import logging
+import traceback
 
 from threading import Semaphore
 import paho.mqtt.client as mqtt
@@ -101,15 +102,26 @@ class Client(mqtt.Client, OrchestratorMixin, ProfileMixin):
         self.subscribe(topic)
         self.message_callback_add(topic, callback)
 
-    def register_handler(self, handler):
-        """Subscribe and register callback for handler."""
+    def register_handler(self, handler, catch=True):
+        """Subscribe and register callback for handler.
+
+        Parameters
+        ----------
+        handler : BaseHandler
+            Message handler to register.
+        catch : bool
+            If True, catches and logs errors; otherwise, raises like usual.
+        """
         def _handle(client, userdata, msg, handler=handler):
             try:
-                return handler.handle(handler.decode(client, userdata, msg))
+                handler.handle(handler.decode(client, userdata, msg))
             except Exception as e:
-                self.log.error(
-                    "{} @ {}: {}".format(str(e), msg.topic, msg.payload[:64]))
-                raise(e)
+                if catch:
+                    self.log.error("{} @ {}: {}".format(
+                        str(e), msg.topic, msg.payload[:64]))
+                    self.log.error(traceback.format_exc())
+                else:
+                    raise(e)
         self.register_callback(handler.topic, _handle)
 
     def on_message(self, client, userdata, message):
