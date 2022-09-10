@@ -171,11 +171,13 @@ class OrchestratorMixin:
     def _get_json(self, address):
         """Get JSON from REST API."""
         r = requests.get("{}/{}/".format(self.arts_api, address))
-        try:
-            return json.loads(r.text)
-        except Exception as e:
-            print(r.text)
-            raise e
+        if r:
+            try:
+                return json.loads(r.text)
+            except Exception as e:
+                print(r.text)
+                raise e
+        return {}
 
     def get_runtimes(self):
         """Get runtimes from REST API."""
