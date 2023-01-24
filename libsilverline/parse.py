@@ -33,6 +33,8 @@ class ArgumentParser(argparse.ArgumentParser):
         if dtype is bool:
             parser.add_argument(*names, help=desc, action="store_true")
             self.set_defaults(**{pdoc.arg_name: False})
+        elif dtype is list:
+            parser.add_argument(*names, nargs='+', help=desc, default=default)
         else:
             parser.add_argument(*names, type=dtype, help=desc, default=default)
         return pdoc.arg_name
