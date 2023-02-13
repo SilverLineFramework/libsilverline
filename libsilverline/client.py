@@ -42,12 +42,15 @@ class Client(mqtt.Client, OrchestratorMixin, ProfileMixin):
         Use SSL (mqtt-secure) if True.
     connect : bool
         Connect to MQTT on initialization if True.
+    bridge : bool
+        Whether to act in bridge mode.
     """
 
     def __init__(
             self, cid="libsilverline", mqtt="localhost", mqtt_port=1883,
             realm="realm", pwd="mqtt_pwd.txt", mqtt_username="cli",
-            use_ssl=False, http="localhost", http_port=8000, connect=True):
+            use_ssl=False, http="localhost", http_port=8000, connect=True,
+            bridge=False):
 
         self.callbacks = {}
         self.arts_api = "http://{}:{}/api".format(http, http_port)
@@ -59,8 +62,10 @@ class Client(mqtt.Client, OrchestratorMixin, ProfileMixin):
         # Append a UUID here since client_id must be unique.
         # If this is not added, MQTT will disconnect with rc=7
         # (Connection Refused: unknown reason.)
-        cid = "{}:{}".format(cid, uuid.uuid4())
-        super().__init__(client_id=cid)
+        super().__init__(client_id="{}:{}".format(cid, uuid.uuid4()))
+
+        if bridge:
+            self.enable_bridge_mode()
 
         if connect:
             self.semaphore = Semaphore()
