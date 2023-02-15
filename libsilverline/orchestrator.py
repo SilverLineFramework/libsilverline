@@ -13,7 +13,7 @@ class OrchestratorMixin:
         payload = json.dumps({
             "object_id": str(uuid.uuid4()),
             "action": "delete",
-            "type": "arts_req",
+            "type": "req",
             "data": {
                 "type": "runtime",
                 "uuid": target,
@@ -27,7 +27,7 @@ class OrchestratorMixin:
         payload = json.dumps({
             "object_id": str(uuid.uuid4()),
             "action": "create",
-            "type": "arts_req",
+            "type": "req",
             "data": {
                 "type": "module",
                 "parent": target,
@@ -38,42 +38,15 @@ class OrchestratorMixin:
 
     def create_module_wasm(
             self, target, name="module", path="wasm/apps/helloworld.wasm",
-            argv=[], env=[], period=10000, utilization=0.0,
-            fault_crash="ignore"):
+            argv=[], env=[], period=10000, utilization=0.0):
         """Create WASM module."""
         module_uuid = str(uuid.uuid4())
         payload = {
             "uuid": module_uuid,
             "name": name,
             "filename": path,
-            "filetype": "WA",
             "args": [path] + argv,
             "env": env,
-            "fault_crash": fault_crash,
-        }
-        if utilization > 0:
-            payload["resources"] = {
-                "period": period,
-                "runtime": int(utilization * period)
-            }
-        self._create_module(payload, target)
-        return module_uuid
-
-    def create_module_py(
-            self, target, name="module", aot=False, path="python/pinata.py",
-            argv=[], env=[], period=10000, utilization=0.0,
-            fault_crash="ignore"):
-        """Create python module."""
-        python = "{t}/rustpython.{t}".format(t="aot" if aot else "wasm")
-        module_uuid = str(uuid.uuid4())
-        payload = {
-            "uuid": module_uuid,
-            "name": name,
-            "filename": python,
-            "filetype": "PY",
-            "args": [python, path] + argv,
-            "env": env,
-            "fault_crash": fault_crash
         }
         if utilization > 0:
             payload["resources"] = {
@@ -87,7 +60,7 @@ class OrchestratorMixin:
         """Delete module."""
         payload = json.dumps({
             "uuid": str(uuid.uuid4()),
-            "type": "arts_req",
+            "type": "req",
             "action": "delete",
             "data": {"uuid": module}
         })
@@ -95,8 +68,7 @@ class OrchestratorMixin:
 
     def create_module(
             self, runtime, name="module", path="wasm/tests/helloworld.wasm",
-            argv=[], env=[], filetype="WA", aot=False, period=10000000,
-            utilization=0.0, fault_crash="ignore"):
+            argv=[], env=[], aot=False, period=10000000, utilization=0.0):
         """Create module.
 
         Parameters
@@ -112,16 +84,12 @@ class OrchestratorMixin:
             Argument passthrough to the module.
         env : str[]
             Environment variables to set.
-        filetype : str
-            Module type; PY or WA.
         aot : bool
             If running a python module, whether to use aot or interpreted.
         period : int
             Period for sched_deadline, in nanoseconds.
         utilization : float
             Utilization for sched_deadline. If 0.0, uses CFS.
-        fault_crash : str
-            Fault tolerance mode for module crashes; 'ignore' or 'restart'.
 
         Returns
         -------
@@ -131,12 +99,8 @@ class OrchestratorMixin:
         kwargs = {
             "name": name, "path": path, "argv": argv, "env": env,
             "period": period, "utilization": utilization,
-            "fault_crash": fault_crash
         }
-        if filetype == "PY":
-            return self.create_module_py(runtime, aot=aot, **kwargs)
-        else:
-            return self.create_module_wasm(runtime, **kwargs)
+        return self.create_module_wasm(runtime, **kwargs)
 
     def create_modules(
             self, runtimes, path="wasm/apps/helloworld.wasm", **kwargs):
